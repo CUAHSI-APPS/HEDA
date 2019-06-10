@@ -1,5 +1,5 @@
 from tethys_sdk.base import TethysAppBase, url_map_maker
-
+from tethys_sdk.app_settings import CustomSetting
 
 class Heda(TethysAppBase):
     """
@@ -29,6 +29,28 @@ class Heda(TethysAppBase):
                 url='heda',
                 controller='heda.controllers.home'
             ),
+            
+        UrlMap(
+                name='add_data',
+                url='heda/data/add',
+                controller='heda.controllers.add_data'
+            ),
+            
         )
 
         return url_maps
+        
+        
+    def custom_settings(self):
+        """
+        Example custom_settings method.
+        """
+        custom_settings = (
+            CustomSetting(
+                name='max size',
+                type=CustomSetting.TYPE_INTEGER,
+                description='Maximum number of size in MB for data analysis - test feature',
+                required=False
+            ),
+        )
+        return custom_settings
