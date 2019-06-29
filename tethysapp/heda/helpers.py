@@ -72,6 +72,6 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     hydrograph_plot = PlotlyView(figure, height=height, width=width)
     session.close()
     return hydrograph_plot
-    
+    #test change
 
 '''        
