@@ -5,13 +5,19 @@
   <h1>Add Data</h1>
 <form id="add-data-form" method="post">
     {% csrf_token %}
-    {% gizmo site_name_input %}
+    {% gizmo site_number_input %}
     {% gizmo owner_input %}
 </form>
+{% gizmo hydrograph_plot %}
 {% endblock %}
+
+
 
 {% block app_actions %}
   {% gizmo cancel_button %}
+  {% gizmo segment_button %}
   {% gizmo upload_button %}
 {% endblock %}
+
+
 

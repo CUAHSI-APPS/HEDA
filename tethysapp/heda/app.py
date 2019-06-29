@@ -1,5 +1,6 @@
 from tethys_sdk.base import TethysAppBase, url_map_maker
 from tethys_sdk.app_settings import CustomSetting
+from tethys_sdk.app_settings import PersistentStoreDatabaseSetting
 
 class Heda(TethysAppBase):
     """
@@ -35,6 +36,11 @@ class Heda(TethysAppBase):
                 url='heda/data/add',
                 controller='heda.controllers.add_data'
             ),
+        UrlMap(
+                name='segment_data',
+                url='heda/data/segment/{event_id}',
+                controller='heda.controllers.segment_data'
+            ),
             
         )
 
@@ -54,3 +60,20 @@ class Heda(TethysAppBase):
             ),
         )
         return custom_settings
+        
+        
+        
+    def persistent_store_settings(self):
+        """
+        Define Persistent Store Settings.
+        """
+        ps_settings = (
+            PersistentStoreDatabaseSetting(
+                name='tethys_super',
+                description='primary database',
+                initializer='heda.model.init_primary_db',
+                required=True
+            ),
+        )
+
+        return ps_settings
