@@ -33,16 +33,18 @@ class Heda(TethysAppBase):
             
         UrlMap(
                 name='add_data',
-                url='heda/data/add',
+                url='heda/data/add/{event_id}',
                 controller='heda.controllers.add_data'
             ),
-        UrlMap(
-                name='segment_data',
-                url='heda/data/segment/{event_id}',
-                controller='heda.controllers.segment_data'
-            ),
+        
+        #UrlMap(
+        #        name='segment_data',
+        #        url='heda/data/segment/{event_id}',
+        #        controller='heda.controllers.segment_data'
+        #    ),
             
         )
+        
 
         return url_maps
         

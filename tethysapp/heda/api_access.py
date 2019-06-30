@@ -35,7 +35,14 @@ def fetch_data(host,parameters):
     
 
     # sending post request and saving response as response object 
-    r = requests.get(url = URL, params = parameters) 
+    try:
+        print('retrieving data')
+        r = requests.get(url = URL, params = parameters) 
+        print(r)
+    except requests.exceptions.RequestException as e:
+        print(e)
+        print('Except of request entered')
+        
   
 
     #print(r.url)

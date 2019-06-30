@@ -26,7 +26,7 @@ Base = declarative_base()
 def dummy():
     return True
 
-def add_new_data(sites, start,end,value):
+def add_new_data(sites, start,end):
     """
     Persist new dam.
     """
@@ -44,8 +44,8 @@ def add_new_data(sites, start,end,value):
         parameters = {}
         parameters['format']= 'json'
         parameters['sites']= sites
-        parameters['startDT'] = '2019-06-03'
-        parameters['endDT'] = '2019-06-9'
+        parameters['startDT'] = start
+        parameters['endDT'] = end
         
         #discharge 00060
         #tributry 63680
@@ -54,12 +54,11 @@ def add_new_data(sites, start,end,value):
         
         Host =  'https://waterservices.usgs.gov/nwis/iv/'
         
-        
         response = fetch_data(Host,parameters)
         
-        if response.status_code != 200:
         
-            print(response)
+        
+        if response.status_code != 200:
             return False
             
         else:
@@ -113,7 +112,7 @@ def add_new_data(sites, start,end,value):
             session.commit()
             session.close()
             
-            
+            print('Event id for new event added is '+str(event_id))
             
             return event_id
         
@@ -307,7 +306,7 @@ class Segments(Base):
 def segmentation(event_id,parameter1,parameter2):
     try:
         # Assign points to hydrograph
-        print('segmentation function entered')
+        
         Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
         session = Session()
         event = session.query(Event).get(int(event_id))
@@ -340,8 +339,8 @@ def segmentation(event_id,parameter1,parameter2):
             
         segments = []
         
-        segments.append(Segments(start = 0,end = 5))
-        segments.append(Segments(start = 10, end = 20))
+        segments.append(Segments(start = 0,end = int(len(time)/2)))
+        segments.append(Segments(start = int(len(time)/2), end = len(time)-1))
         event.trajectory.segments = segments
         
         
@@ -350,7 +349,7 @@ def segmentation(event_id,parameter1,parameter2):
         session.close()
     
     
-        print('segmentation committed')
+        
     
         return True
     
