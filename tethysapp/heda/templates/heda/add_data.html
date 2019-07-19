@@ -12,18 +12,19 @@
     <h1>Event Segmentation Parameters</h1>
 <form id="segment-data-form" method="post">
     {% csrf_token %}
-    {% gizmo parameter1_input %}
-    {% gizmo parameter2_input %}
+    {% gizmo fc_input %}{% gizmo PKThreshold_input %}{% gizmo ReRa_input %}{% gizmo BSLOPE_input %}
+    {% gizmo ESLOPE_input %}{% gizmo SC_input %}{% gizmo MINDUR_input %}{% gizmo dyslp_input %}
 </form>
 {% gizmo hydrograph_plot %}
 {% endblock %}
-
 
 
 {% block app_actions %}
   {% gizmo cancel_button %}
   {% gizmo segment_button %}
   {% gizmo retrieve_button %}
+  {% gizmo download_button %}
+  {% gizmo visualize_button %}
 {% endblock %}
 
 

@@ -70,7 +70,7 @@ def add_new_data(sites, start,end):
             y = json.loads(response.text)
             
     
-    
+            print(y)
     
             discharge_json = y['value']['timeSeries'][0]['values']
             SSC_json = y['value']['timeSeries'][1]['values']
@@ -308,10 +308,10 @@ class Segments(Base):
     
 
     
-    
 
 
-def segmentation(event_id,parameter1,parameter2):
+
+def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
     try:
         # Assign points to hydrograph
         
@@ -345,14 +345,14 @@ def segmentation(event_id,parameter1,parameter2):
         #    time.append(point.time)
         print('event id for segmentation: '+str(event_id))
         segments = []
-        fc = 0.995
-        PKThreshold = 0.03
-        ReRa = 0.1
+        #fc = 0.995
+        #PKThreshold = 0.03
+        #ReRa = 0.1
         time,flow,concentration,segments=get_conc_flow_seg(event_id)
         print('flow recieved')
         stormflow,baseflow = separatebaseflow(flow,fc,4)
         print('base flow seperated')
-        runoffEvents, nRunoffEvent = extractrunoff(stormflow, PKThreshold, ReRa, 0.001, 0.0001, 4,MINDUR = 0, dyslp = 0.001)
+        runoffEvents, nRunoffEvent = extractrunoff(stormflow, PKThreshold, ReRa, BSLOPE=0.001, ESLOPE = 0.0001, SC=4,MINDUR = 0, dyslp = 0.001)
         print('run off events'+str(nRunoffEvent))
         
         for i in range(0,nRunoffEvent):
