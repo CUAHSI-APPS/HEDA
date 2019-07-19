@@ -18,6 +18,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker
+import numpy as np
+
+import copy 
+
 
 Base = declarative_base()
 
@@ -264,8 +268,12 @@ def get_conc_flow_seg(event_id):
     
     segments = []
     for segment in trajectory.segments:
-        segments.append(segment.start)
-        segments.append(segment.end)
+        d={}
+        d['start'] = segment.start
+        d['end'] = segment.end
+        #segments.append(segment.start)
+        #segments.append(segment.end)
+        segments.append(d)
     
     
     # Query for all dam records
@@ -316,7 +324,6 @@ def segmentation(event_id,parameter1,parameter2):
         
         
         
-        
         # Overwrite old hydrograph
         segments = event.trajectory.segments
     
@@ -331,17 +338,35 @@ def segmentation(event_id,parameter1,parameter2):
             session.delete(segment)
     
         trajectory = event.trajectory
-        time = []
+        #time = []
         
         
-        for point in trajectory.points:
-            time.append(point.time)
-            
+        #for point in trajectory.points:
+        #    time.append(point.time)
+        print('event id for segmentation: '+str(event_id))
         segments = []
+        fc = 0.995
+        PKThreshold = 0.03
+        ReRa = 0.1
+        time,flow,concentration,segments=get_conc_flow_seg(event_id)
+        print('flow recieved')
+        stormflow,baseflow = separatebaseflow(flow,fc,4)
+        print('base flow seperated')
+        runoffEvents, nRunoffEvent = extractrunoff(stormflow, PKThreshold, ReRa, 0.001, 0.0001, 4,MINDUR = 0, dyslp = 0.001)
+        print('run off events'+str(nRunoffEvent))
         
-        segments.append(Segments(start = 0,end = int(len(time)/2)))
-        segments.append(Segments(start = int(len(time)/2), end = len(time)-1))
+        for i in range(0,nRunoffEvent):
+            event_indexes = runoffEvents[i][:,0]
+            print(event_indexes)
+            segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
+        
+        
         event.trajectory.segments = segments
+         
+        #segments.append(Segments(start = 0,end = int(len(time)/2)))
+        #segments.append(Segments(start = int(len(time)/2), end = len(time)-1))
+           
+        
         
         
         # Persist to database
@@ -357,40 +382,297 @@ def segmentation(event_id,parameter1,parameter2):
     except Exception as e:
         # Careful not to hide error. At the very least log it to the console
         print(e)
+        print('in exception')
         return False
-
-'''
-        new_data_id = uuid.uuid4()
-        data_dict = {
-            'id': str(new_data_id),
-            'site': sites,
-            'start': start,
-            'end': end,
-            'discharge':discharge,
-            'SSC': SSC
-            
-            
-        }
-        data_json = json.dumps(data_dict)
-
-        # Write to file in app_workspace/dams/{{uuid}}.json
-        # Make dams dir if it doesn't exist
-        app_workspace = app.get_app_workspace()
-        data_dir = os.path.join(app_workspace.path, 'data')
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
-        # Name of the file is its id
-        file_name = str(new_data_id) + '.json'
-        file_path = os.path.join(data_dir, file_name)
-
-        # Write json
-        with open(file_path, 'w') as f:
-            f.write(data_json)
         
         
-        hydrograph =create_hydrograph(discharge)
-        status = 'OK'
-        return hydrograph,status
+
+    
+def separatebaseflow(hy,fc,Pass =4): 
+    
+    #Separate streamflow into baseflow and stormflow.
+    #[stormflow, baseflow] = separatebaseflow(hy, filter, pass) separates 
+    #streamflow (hy) into baselfow and stormflow using digital filter method. 
+    #fc = filter coefficient, 
+    #pass = # times of filter passing through hy
+#
+    #Note: This function adpots the agorithm from a R package of EcoHydRology.
+    #However, the initial status of baseflow has been improved. 
+    
+
+    n = len(hy)
+    TV = np.arange(0,len(hy))
+    bf = np.empty(n)
+    bf[:] = np.nan
+    
+    bf_p = hy #baseflow from the previous pass, initial is the streamflow
+
+    for j in range(1,Pass+1):
+        #set forward and backward pass
+        if j% 2 == 1:
+            sidx = 0
+            eidx = n 
+            incr = 1
+        else:
+            sidx = n-1
+            eidx = 1 
+            incr = -1 
         
-        '''
+        #set the inital value for baseflow
+        bf[sidx] = bf_p[sidx]
+        
+        for i in range(sidx + incr,eidx,incr):         
+            tmp = fc*bf[i-incr] + (1-fc)*(bf_p[i]+bf_p[i-incr])/2
+            #print(tmp)
+            #print(bf_p[i])
+            bf[i] = np.nanmin([tmp, bf_p[i]])     
+        
+        bf_p = bf
+  
+    
+   
+    sf = hy - bf #% stormflow
+    
+    #sf = np.concatenate((TV,sf))
+    #sf = np.concatenate((TV,bf))
+    #TV = [TV, bf] 
+
+       
+    return sf,bf
+
+def findTP(LINE):
+    #Identify Turning Points for a Line
+   
+#   [TP] = findTP(LINE) returns an two-column array of turning points,
+#   where the 1st column is the index of turning point in LINE, and the 2nd
+#   column is the label for peak and valley (peak = 1, valley = 0).  
+#
+#   Note: LINE is supposed to be a vector (one column). 
+#   This function replaces the 'findinflect.m'
+
+    FOD = np.diff(LINE) #first order derivative
+    sDiff = np.diff(np.sign(FOD)) #sign difference 
+    idx = np.nonzero(sDiff) #find the index of the turning points
+
+    #Turning Points (TP):
+    #1st column is the index of turing point in the orginal data (LINE)
+    #2nd the label for peak and valley
+
+
+    TP_1 = np.asarray(idx)+1
+    TP_2 = sDiff[idx]
+    
+    TP = np.column_stack((TP_1[0],TP_2))
+    
+    TP[TP[:, 1] > 0, 1] = 0 #mark local min (valley) with 0
+    TP[TP[:, 1] < 0, 1] = 1 #mark local max (peak) with 1
+
+
+
+    return TP
+
+
+
+def smoothcurve(X,Pass):
+    
+#Smooth Response Data
+#
+#   [Y] = smoothcurve(X, Pass) smooths the data in the column vector X
+#   using a moving average filter. Result is returned in the column vector Y. 
+#   The size of the moving average (window) is 3. Pass is the number of
+#   filter passing through data. 
+    
+    if Pass > 0:    
+        for n in range(0,Pass):
+            for i in range(1,len(X)-1):
+                X[i] = (X[i-1] + 2*X[i] + X[i+1])/4;
+             
+                 
+     
+    Y = X;
+    
+
+
+    return Y
+
+
+
+def extractrunoff(stormflow, MINDIFF, RETURNRATIO, BSLOPE, ESLOPE, SC, MINDUR = 0, dyslp = 0.001):
+    #Extract Runoff Events from Stormflow
+    #   [RunoffEvent, nEvent] = extractrunoff(stormflow, MINDIFF, RETURNRATIO,
+    #   BSLOPE, ESLOPE, SC, MINDUR) returns extracted runoff events in a cell
+    #   array (RunoffEvent) and the number of extracted events (nEvent). 
+    #   
+    #   Explanation of Input Variables
+    #   Stormflow: = streamflow - baseflow
+    #   MINDIFF: minimum difference between start (or end) and peak of runoff.
+    #       It ensures that the extracted runoff events always have (at least)
+    #       one distinct peak. 
+    #   RETURNRATIO: determine where runoff terminates. In this case, runoff is
+    #       considered terminated when declining below a dynamic threshould, A.
+    #       A = Fmax (Peak Discharge) * RETURNRATIO.
+    #   BSlope and ESlope: Beigining Slope and End Slope. They are threshoulds
+    #       of slope, used to cut flat head and end of the runoff event. 
+    #   SC: smooth coeffcient. It determine how many passes will apply on
+    #       stormflow. More passes result smoother hydrograph. 
+    #   MINDUR (optional): minimun duration. It define the minimum duration of selected 
+    #       runoff events, so spiky, narrow events will be ignored automatically. 
+    #       MINDUR's value represents the number of element, so the minimum
+    #       duration is actually equal to MINDUR * TimeInterval. 
+    #   dyslp (optional): dynamic slope threshold used to cut the flat head and
+    #       end of the runoff event.  
+
+
+    RETURNCONSTANT = MINDIFF/3
+
+    # Step 1: Hydorgraph Smoothing
+    hy = copy.deepcopy(stormflow) 
+    hy = smoothcurve(hy, SC) 
+    st = []
+    ed = []
+
+    #Step 2: Turning Points (TP) Identification and Extraction
+    #Identify local max and min (peak and valley)
+    TP = findTP(hy) #1st column: index; 2nd column: label (valley = 0, peak = 1)
+    TP = TP.astype(int)
+    TP_temp = hy[TP[:,0]]
+    TP_temp = TP_temp.reshape(len(TP_temp),1)
+    TP = np.append(TP,TP_temp,axis = 1)
+
+
+    #the first element in 'hy' array is considered a 'valley point' no matter what, 
+    #if it is at a very low level (< Q_avg/10).
+
+    if TP[0, 1] == 1 and hy[0] < np.mean(hy)/10:
+        TP = np.vstack(([1,0,hy[0]],TP))
+
+ 
+    #the last element in 'hy' array is considered a 'valley point' no matter what, 
+    #if it is at a very low level (< Q_avg/10). 
+    if TP[-1, 1] == 1 and hy[-1] < np.mean(hy)/10:
+        TP = np.vstack((TP,[len(hy), 0, hy[-1]]))
+
+ 
+    #Remove incomplete event(s) at the beginning and at the end
+    while TP[0, 1] == 1:
+        np.delete(TP[0])
+    while TP[-1, 1] == 1:
+        np.delete(TP[-1])  
+
+
+    #Step 3: Identify the Start and End Points of Runoff Event 
+    #Get difference between peak and valley
+    TP_temp = np.diff(TP[:, 2])
+    TP_temp = np.append(TP_temp,0)
+
+    TP_temp = TP_temp.reshape(len(TP_temp), 1)
+    TP = np.append(TP, TP_temp, axis=1)
+
+    #Find out start and end points of event flows
+    i = 0;
+    c = 0; 
+    isComplete = 1; 
+    nInflect = len(TP)
+    
+    while i < nInflect -1:
+        j = 1;
+        d = TP[i, 3] + TP[i+j, 3];
+        while d > max(RETURNRATIO * max(abs(TP[i:i+j, 3])), RETURNCONSTANT):
+            if i + j < nInflect - 1: 
+                j = j + 1 
+                d = d + TP[i+j, 3]
+            else: 
+                isComplete = 0 
+                break
+             
+         
+        st.append(i)
+        ed.append(i + j)
+        i = i + j + 1
+        c = c + 1   
+ 
+
+    
+    if isComplete == 0:
+        st = np.array(st)
+        ed = np.array(ed)
+        st = st[0:- 1]
+        ed = ed[0:- 1]
+ 
+
+
+    #Step 4: Extract Runoff Events and Put Each of Them into a Cell
+    nEvent = 0
+    runoffEvents = [] 
+
+    for i in range(0,len(st)):
+
+        date = np.arange(TP[st[i], 0]-1, TP[ed[i] + 1, 0])
+        event_smooth = hy[int(TP[st[i], 0])-1:int(TP[ed[i]+1, 0])]
+
+
+        event = stormflow[int(TP[st[i], 0])-1:int(TP[ed[i]+1, 0])]
+        
+        eventflow = np.column_stack((date,event))
+        eventflow = np.column_stack((eventflow,event_smooth))
+        
+    
+        
+       
+        temp1 = np.diff(eventflow[:, 2]) 
+        
+        
+        
+        #Select runoff events whose peak exceeds threshold (minDiff)
+
+
+        if max(eventflow[:, 1]) - eventflow[0, 1] > MINDIFF and max(eventflow[:, 1]) - eventflow[-1, 1] > MINDIFF:
+
+            ran = max(eventflow[:, 1]) - min(eventflow[:, 1])
+            dyslp = dyslp * ran #dynamic slope threhould
+            #Shorten runoff event by removing flat head and end
+            #Check slope on smoothed flow data
+
+
+
+            while len(temp1) > 0 and temp1[0] < min([BSLOPE, dyslp]):
+               eventflow = eventflow[1:, :]
+               temp1 = temp1[1:];
+
+
+
+            while len(temp1) > 0 and temp1[-1] > -min([ESLOPE, dyslp]):
+                eventflow = eventflow[0:-1, :]
+                temp1 = temp1[0:-1]
+
+
+            #Check slope on orginal flow data
+            if len(temp1) > 0:
+                t = eventflow[:, 1]
+                t = np.diff(t)
+                temp2 = np.diff(eventflow[:, 1])
+                t= len(temp2)
+                while len(temp2) > 0 and temp2[0] <= min([BSLOPE, dyslp]):
+                    eventflow = eventflow[1:, :]
+                    temp2 = temp2[1:]
+
+
+
+                while len(temp2) > 0 and temp2[-1] >= -min([ESLOPE, dyslp]):
+                    eventflow = eventflow[0:-1, :]
+                    temp2 = temp2[0:-1]
+
+
+
+
+                    #Select Runoff Events whose duration exceeds threshold (minDur)
+                if len(temp2) > MINDUR:
+                    nEvent = nEvent + 1;
+                    runoffEvents.append(eventflow[:, 0:2])
+
+    
+ 
+    return runoffEvents, nEvent
+
+                      
+    

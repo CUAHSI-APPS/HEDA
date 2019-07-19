@@ -11,80 +11,60 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     
     
     if len(segments)==0:
-        segments = [0,len(flow)-1]
-
+        d = {}
+        d['start'] = 0
+        d['end'] = len(flow)
+        segments.append(d)
+           
+    
+    event_segments = []    
+    
     flow_go = go.Scatter(
             x=np.arange(0,len(flow)),
             y=flow,
             name='Hydrograph',
-            line={'color': 'blue', 'width': 4, 'shape': 'spline'},
-    )
-    
-    #'#0080ff'
-    concentration_go = go.Scatter(
-            x=np.arange(0,len(concentration)),
-            y=concentration,
-            name='Sedigraph',
-            line={'color': 'orange', 'width': 4, 'shape': 'spline'},
+            mode = 'lines',
+            line={'color': 'blue', 'width': 4},
     )
     
     
     
+    event_segments.append(flow_go)
     flow = np.asarray(flow)
     
-    segments_go = go.Scatter(
-        x= segments,
-        y = flow[segments],
-        mode = 'markers',
-        name = 'Segments',
-        line={'color': 'red'},
-    )
-    
-    
-    trajectory_go = go.Scatter3d(
-    x=flow,
-    y=flow,
-    z=concentration,
-    mode = 'markers',
-    name = 'trajectory',
-    marker=dict(
-        size=12,
-        line=dict(
-            color='rgba(217, 217, 217, 0.14)',
-            width=0.5
-        ),
-        opacity=0.8
-    )
-    )
+    for segment in segments:
+        event_flow = flow[segment['start']:segment['end']]
+        event_go = go.Scatter(
+            x=np.arange(segment['start'],segment['end']),
+            y=event_flow,
+            mode = 'lines',
+            line={'color': 'red', 'width': 1, 'shape': 'spline'},
+            
+        
+        )
+        event_segments.append(event_go)
     
 
-    hysteresis_go = go.Scatter(
-        x= flow,
-        y = concentration,
-        mode = 'markers',
-        name = 'Segments',
-    )
     
-    data = [trajectory_go]
+    data = event_segments
     layout = go.Layout(
+    xaxis = go.layout.XAxis(
+        tickmode = 'linear',
+       
+    ),
         margin=dict(
         l=0,
         r=0,
         b=0,
         t=0
     )
+    
     )
     
-    #fig = go.Figure(data=data, layout=layout)
-    fig = tools.make_subplots(rows=2, cols=1)
-    #fig.append_trace(trajectory_go, 1, 1)
-    fig.append_trace(flow_go, 1, 1)
-    fig.append_trace(segments_go,1,1)
-    fig.append_trace(concentration_go, 2, 1)
-    #fig.append_trace(hysteresis_go, 1, 2)
-    #fig.append_trace(hysteresis_go, 2, 2)
+    fig = go.Figure(data=data, layout=layout)
     
-    #fig['layout'].update(title='Visualizations')
+    
+    fig['layout'].update(title='Visualizations')
    
     #data = [flow_go,segments_go]
     #layout = {
