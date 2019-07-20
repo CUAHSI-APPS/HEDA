@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 
 from .model import add_new_data,segmentation
-from .helpers import create_hydrograph,plot_event
+from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot
 
 from tethys_sdk.permissions import has_permission
 
@@ -447,14 +447,18 @@ def visualize_events(request,event_id,sub_event):
     #hydrograph_plot = create_hydrograph(1)
     
     
-    hydrograph_plot = plot_event(int(event_id),int(sub_event))
+    cqt_plot = cqt_event_plot(int(event_id),int(sub_event))
+    cq_plot = cq_event_plot(int(event_id),int(sub_event))
+    candq_plot = candq_event_plot(int(event_id),int(sub_event))
     
     if request.POST and 'previous-button' in request.POST:
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
         
     
     context = {
-        'hydrograph_plot':hydrograph_plot,
+        'cqt_plot':cqt_plot,
+        'cq_plot':cq_plot,
+        'candq_plot':candq_plot,
         'cancel_button': cancel_button,
         'previous_button': previous_button,
         'download_button':download_button,

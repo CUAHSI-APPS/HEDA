@@ -1,105 +1,7 @@
-#'#0080ff'
-    concentration_go = go.Scatter(
-            x=np.arange(0,len(concentration)),
-            y=concentration,
-            name='Sedigraph',
-            line={'color': 'orange', 'width': 4, 'shape': 'spline'},
-    )
-    
-    
-    
-    trajectory_go = go.Scatter3d(
-    x=flow,
-    y=flow,
-    z=concentration,
-    mode = 'markers',
-    name = 'trajectory',
-    marker=dict(
-        size=12,
-        line=dict(
-            color='rgba(217, 217, 217, 0.14)',
-            width=0.5
-        ),
-        opacity=0.8
-    )
-    )
-    
-    
-     hysteresis_go = go.Scatter(
-        x= flow,
-        y = concentration,
-        mode = 'markers',
-        name = 'Segments',
-    )
-    
-    
-    #fig = tools.make_subplots(rows=2, cols=1)
-    #fig.append_trace(trajectory_go, 1, 1)
-    #fig.append_trace(flow_go, 1, 1)
-    #fig.append_trace(segments_go,1,1)
-    #fig.append_trace(concentration_go, 2, 1)
-    #fig.append_trace(hysteresis_go, 1, 2)
-    #fig.append_trace(hysteresis_go, 2, 2)
-    
-    
-    
-    
-     hysteresis_go = go.Scatter(
-            x=event_flow,
-            y=event_concentration,
-            mode = 'lines',
-            line={'color': 'red', 'width': 1, 'shape': 'spline'},
-            
-        
-        )
-        
-    concentration_go = go.Scatter(
-            x=np.arange(segments[sub_event]['start'],segments[sub_event]['end']),
-            y=event_concentration,
-            mode = 'lines',
-            line={'color': 'orange', 'width': 1, 'shape': 'spline'},
-            
-        
-        )
-    flow_go = go.Scatter(
-            x=np.arange(segments[sub_event]['start'],segments[sub_event]['end']),
-            y=event_flow,
-            mode = 'lines',
-            line={'color': 'blue', 'width': 1, 'shape': 'spline'},
-            
-        
-        )
-    
-    
-    
-    fig = tools.make_subplots(rows=3, cols=1)
-    fig.append_trace(hysteresis_go, 1, 1)
-    fig.append_trace(flow_go, 2, 1)
-    fig.append_trace(concentration_go,3,1)
-    
-
-    
-    
-    
-    
-    
-    hydrograph_plot = PlotlyView(fig, height='520px', width='100%')
-    
-    
-    
-    
-     # Converting to Plotly's Figure object..
-    #plotly_fig = tools.mpl_to_plotly(figure)
 
 
-    #hydrograph_plot = PlotlyView(plotly_fig, height=height, width=width)
-        
-    #return hydrograph_plot 
-    
-    
-    
-    
-    
+
+
 class MyAxes3D(axes3d.Axes3D):
 
     def __init__(self, baseObject, sides_to_draw):
@@ -211,7 +113,7 @@ class HandlerColorLineCollection(HandlerLineCollection):
         return [lc]
 
     
-def create_plot(discharge,concentration):
+def plot_event(discharge,concentration):
     fig = plt.figure(figsize=(9,12))#
     
     #l = ['sedimentFlow','streamFlow','streamFlow']
@@ -293,7 +195,7 @@ def create_plot(discharge,concentration):
         
         if c ==3:
             
-            axarr= fig.add_subplot(1, 3, c, projection='3d')
+            axarr= fig.add_subplot(1, 3, c, projection='3d',aspect='equal')
             axarr = fig.add_axes(MyAxes3D(axarr, 'r'))
 
             
@@ -355,8 +257,8 @@ def create_plot(discharge,concentration):
             axarr.w_zaxis.line.set_color(cqtcolor)
             
             
-        
-    print('saving...')
-    plt.savefig('graph.png',bbox_inches='tight')
+    
+    
+    
     
     return fig
