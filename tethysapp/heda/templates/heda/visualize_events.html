@@ -2,12 +2,10 @@
 {% load tethys_gizmos %}
 
 {% block app_content %}
-    <h1>Event visualization</h1>
-
-    {% gizmo cqt_plot %}
-    {% gizmo cq_plot %}
-    {% gizmo candq_plot %}
-
+    {% spaceless %}
+        <h1>Event Visualization</h1>
+            {% gizmo cq_plot %}
+    {% endspaceless %}
 {% endblock %}
 
 

@@ -1,4 +1,6 @@
 from plotly import graph_objs as go
+from plotly import tools
+from plotly.subplots import make_subplots
 from tethys_gizmos.gizmo_options import PlotlyView
 #from tethysapp.heda.app import Heda as app
 from .model import get_conc_flow_seg
@@ -18,6 +20,7 @@ cqtcolor= 'g'
 
 def create_hydrograph(event_id, height='520px', width='100%'):
 # Build up Plotly plot
+    print(event_id)
     time,flow,concentration,segments=get_conc_flow_seg(event_id)
     
     
@@ -58,9 +61,13 @@ def create_hydrograph(event_id, height='520px', width='100%'):
 
     
     data = event_segments
+    if event_id != '1':
+        title = 'Hydrograph with {0} events'.format(str(len(segments)))
+    else:
+        title = 'Hydrograph to verify segmentation'
     
     layout = {
-        'title': 'Hydrograph with {0} events'.format(str(len(segments))),
+        'title': title,
         'xaxis': {'title': 'Time'},
         'yaxis': {'title': 'Flow (cfs)'},
         'showlegend': False
@@ -163,7 +170,7 @@ def cqt_event_plot(event_id, sub_event,height='520px', width='100%'):
     
     
     
-    hydrograph_plot = PlotlyView(figure, height='520px', width='100%')
+    hydrograph_plot = PlotlyView(figure, height='200px', width='100%')
         
     return hydrograph_plot
 
@@ -202,6 +209,7 @@ def cq_event_plot(event_id, sub_event,height='520px', width='100%'):
     ),
     )
     
+   
     
     data = [hysteresis_go]
     
@@ -234,10 +242,10 @@ def cq_event_plot(event_id, sub_event,height='520px', width='100%'):
 
     figure = {'data': data, 'layout': layout}
 
-
-
     
-    hydrograph_plot = PlotlyView(figure, height='520px', width='100%')
+    
+    
+    hydrograph_plot = PlotlyView(figure, height='200px', width='100%')
         
     return hydrograph_plot
    
@@ -331,3 +339,137 @@ def candq_event_plot(event_id, sub_event,height='520px', width='100%'):
     hydrograph_plot = PlotlyView(figure, height='520px', width='100%')
         
     return hydrograph_plot   
+    
+    
+def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
+# Build up Plotly plot
+    time,flow,concentration,segments=get_conc_flow_seg(event_id)
+    
+    
+    if len(segments)==0:
+        d = {}
+        d['start'] = 0
+        d['end'] = len(flow)
+        segments.append(d)
+           
+    if sub_event >=len(segments):
+        sub_event = len(segments)-1
+    if sub_event <0:
+        sub_event = 0
+    
+    
+    event_flow = flow[segments[sub_event]['start']:segments[sub_event]['end']]
+    event_concentration = concentration[segments[sub_event]['start']:segments[sub_event]['end']]
+   
+    # Initialize figure with subplots
+    fig = make_subplots(
+        rows=2, cols=2,
+        column_widths=[0.6, 0.4],
+        row_heights=[0.4, 0.6],
+        specs=[[{"type": "scatter", "rowspan": 2}, {"type": "xy","secondary_y": True}],
+            [            None                    , {"type": "scatter3d"}]])
+
+    # Add scattergeo globe map of volcano locations
+    fig.add_trace(
+            go.Scatter(
+                x= event_flow,
+                y = event_concentration,
+                mode = 'lines',
+                name = 'Hysteresis',
+                fill='toself',
+                
+                line=dict(
+                        width=6,
+                        color='#1f77b4',
+            
+                        ),
+                    
+                   
+            
+            ),
+            row=1, col=1
+                )
+                
+
+            
+    # Add traces
+    fig.add_trace(
+        go.Scatter(x=np.arange(0,len(event_flow)), y=event_flow, name="Discharge (Q)", line=dict(
+                        width=4,
+                        color='blue',
+            
+                        ),
+                        ),
+        row=1, col=2,
+        secondary_y=False,
+        
+        
+    )
+    fig.add_trace(
+        go.Scatter(x=np.arange(0,len(event_flow)), y=event_concentration, name="Concentration (C)",line=dict(
+                        width=4,
+                        color='orange',
+            
+                        ),),
+        row=1, col=2,
+        secondary_y=True,
+    
+    
+    )
+    
+    
+    
+    
+    # Add 3d surface of volcano
+    fig.add_trace(
+        go.Scatter3d(
+            x=np.arange(0,len(event_flow)),
+            y=event_flow,
+            z=event_concentration,
+            mode = 'lines',
+            name = 'trajectory',
+            line=dict(
+                width=10,
+                color=np.arange(0,len(event_flow)),
+                colorscale='Viridis',
+            )
+    
+        ),
+        row=2, col=2
+    )
+
+    # Set theme, margin, and annotation in layout
+    fig.update_layout(
+        template="plotly_dark", #ggplot2, plotly_dark, seaborn, plotly, plotly_white, presentation, xgridoff
+        margin=dict(r=10, t=25, b=40, l=60),
+        annotations=[
+            go.layout.Annotation(
+                text="Source: CAUHSI - HEDA Tool",
+                showarrow=False,
+                xref="paper",
+                yref="paper",
+                x=0,
+                y=0)
+        ],
+        scene1 = dict(
+                    xaxis_title='Time',
+                    yaxis_title='Discharge',
+                    zaxis_title='Concentration'),
+        
+    )
+    
+    
+    fig.update_yaxes(title_text="Concentration", row=1, col=1)
+    fig.update_xaxes(title_text="Discharge", row=1, col=1)
+    
+    
+    fig.update_xaxes(title_text="Time", row=1, col=2)
+    fig.update_yaxes(title_text="Discharge", row=1, col=2,secondary_y = False)
+    fig.update_yaxes(title_text="Concentration", row=1, col=2,secondary_y = True)
+    
+    
+    
+    
+    hydrograph_plot = PlotlyView(fig, height='520px', width='100%')
+    return hydrograph_plot
+   

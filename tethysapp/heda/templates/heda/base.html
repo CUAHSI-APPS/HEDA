@@ -17,7 +17,7 @@
 {% url 'heda:add_data' as add_data_url %}
 <li class="title">Navigation</li>
 <li class="{% if request.path == home_url %}active{% endif %}"><a href="{{ home_url }}">Home</a></li>
-<li class="{% if request.path == add_data_url %}active{% endif %}"><a href="/apps/heda/data/add/1">Add Data</a></li>
+<li class="{% if request.path == add_data_url %}active{% endif %}"><a href="/apps/heda/data/add/1">Select Data</a></li>
 {% endblock %}
 
 {% block app_content %}

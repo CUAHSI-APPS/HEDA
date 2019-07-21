@@ -4,16 +4,70 @@
 {% block app_content %}
   <h1>Retrieve Data</h1>
 <form id="add-data-form" method="post">
-    {% csrf_token %}
-    {% gizmo site_number_input %}
-    {% gizmo start_date_input %}
-    {% gizmo end_date_input %}
+    <div class="container">
+        <div class="row">
+            {% csrf_token %}
+            <div class="col-sm-3">
+                {% gizmo site_number_input %}
+            </div>
+            <div class="col-sm-3">
+                {% gizmo start_date_input %}
+            </div>
+            <div class="col-sm-3">
+                {% gizmo end_date_input %}
+            </div>
+        </div>
+    </div>
 </form>
+<form id="upload-data-form" method="post">
+  <h1>Upload Data</h1>
+  <div class="row">
+      <div class="col-sm-6">
+        {% gizmo file_path_input %}
+      </div>
+      <div class="col-sm-6">
+        {% gizmo browse_button %}
+      </div>
+  </div>
+
+
+</form>
+  
+ 
+
     <h1>Event Segmentation Parameters</h1>
 <form id="segment-data-form" method="post">
     {% csrf_token %}
-    {% gizmo fc_input %}{% gizmo PKThreshold_input %}{% gizmo ReRa_input %}{% gizmo BSLOPE_input %}
-    {% gizmo ESLOPE_input %}{% gizmo SC_input %}{% gizmo MINDUR_input %}{% gizmo dyslp_input %}
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-2">
+                {% gizmo fc_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo PKThreshold_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo ReRa_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo BSLOPE_input %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2">
+                {% gizmo ESLOPE_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo SC_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo MINDUR_input %}
+            </div>
+            <div class="col-sm-2">
+                {% gizmo dyslp_input %}
+            </div>
+        </div>
+    </div>
 </form>
 {% gizmo hydrograph_plot %}
 {% endblock %}

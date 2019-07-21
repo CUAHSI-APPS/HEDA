@@ -9,7 +9,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 
 from .model import add_new_data,segmentation
-from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot
+from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot,cqt_cq_event_plot
 
 from tethys_sdk.permissions import has_permission
 
@@ -125,6 +125,7 @@ def add_data(request,event_id=1):
     start_date_error = ''
     end_date_error = ''
     PKThreshold_error  =''
+    file_path_error = ''
     fc_error = ''
     fc = ''
     PKThreshold = '' 
@@ -187,7 +188,6 @@ def add_data(request,event_id=1):
 
     if request.POST and 'retrieve-button' in request.POST:
         # Get values
-        print('retrieve started')
         has_errors = False
         site_number = request.POST.get('site-number', None)
         start_date = request.POST.get('start-date', None)
@@ -241,7 +241,17 @@ def add_data(request,event_id=1):
         initial=site_number,
         placeholder='e.g.: 01646500',
         error=site_number_error,
+        #attributes={'form': 'retrieve-form'},
     )
+    
+    # Define form gizmos
+    file_path_input = TextInput(
+        placeholder='File Path',
+        name='file-path',
+        error=file_path_error,
+        #attributes={'form': 'upload-data-form'},
+    )
+    
     
     start_date_input = DatePicker(
         name='start-date',
@@ -252,6 +262,7 @@ def add_data(request,event_id=1):
         today_button=True,
         error=start_date_error,
         initial = '2019-06-04',
+        #attributes={'form': 'retrieve-form'},
     )
     
     end_date_input = DatePicker(
@@ -261,8 +272,9 @@ def add_data(request,event_id=1):
         format='yyyy-mm-dd',
         start_view='decade',
         today_button=True,
-        error=start_date_error,
+        error=end_date_error,
         initial = '2019-06-05',
+        #attributes={'form': 'retrieve-form'},
     )
 
     
@@ -364,6 +376,15 @@ def add_data(request,event_id=1):
         submit=True
     )
     
+    browse_button = Button(
+        display_text='Browse',
+        name='browse-button',
+        style='success',
+        attributes={'form': 'upload-data-form'},
+        
+        submit=True
+    )
+    
     
     cancel_button = Button(
         display_text='Cancel',
@@ -403,6 +424,9 @@ def add_data(request,event_id=1):
         'MINDUR_input':MINDUR_input,
         'dyslp_input':dyslp_input,
         'download_button':download_button,
+        'browse_button': browse_button,
+        'file_path_input':file_path_input,
+        
 
     }
     
@@ -450,15 +474,16 @@ def visualize_events(request,event_id,sub_event):
     cqt_plot = cqt_event_plot(int(event_id),int(sub_event))
     cq_plot = cq_event_plot(int(event_id),int(sub_event))
     candq_plot = candq_event_plot(int(event_id),int(sub_event))
+    cqt_cq_plot = cqt_cq_event_plot(int(event_id),int(sub_event))
     
     if request.POST and 'previous-button' in request.POST:
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
         
     
     context = {
-        'cqt_plot':cqt_plot,
-        'cq_plot':cq_plot,
-        'candq_plot':candq_plot,
+        #'candq_plot':candq_plot,
+        #'cqt_plot':cqt_plot,
+        'cq_plot':cqt_cq_plot, 
         'cancel_button': cancel_button,
         'previous_button': previous_button,
         'download_button':download_button,
