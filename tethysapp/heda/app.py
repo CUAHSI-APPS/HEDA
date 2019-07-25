@@ -1,15 +1,15 @@
 from tethys_sdk.base import TethysAppBase, url_map_maker
 from tethys_sdk.app_settings import CustomSetting
 from tethys_sdk.app_settings import PersistentStoreDatabaseSetting
-
+import os
 class Heda(TethysAppBase):
     """
     Tethys app class for HEDA.
     """
-
+    
     name = 'HEDA'
     index = 'heda:home'
-    icon = 'heda/images/icon.gif'
+    icon = '/heda/images/heda.gif'
     package = 'heda'
     root_url = 'heda'
     color = '#f39c12'
@@ -17,7 +17,7 @@ class Heda(TethysAppBase):
     tags = '&quot;#27AE60&quot;'
     enable_feedback = False
     feedback_emails = []
-
+    print(os.getcwd())
     def url_maps(self):
         """
         Add controllers

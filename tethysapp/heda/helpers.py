@@ -34,22 +34,23 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     event_segments = []    
     
     flow_go = go.Scatter(
-            x=np.arange(0,len(flow)),
+            x=time,
             y=flow,
             name='Hydrograph',
             mode = 'lines',
             line={'color': 'blue', 'width': 4},
     )
     
-    
+   
     
     event_segments.append(flow_go)
     flow = np.asarray(flow)
     
     for segment in segments:
         event_flow = flow[segment['start']:segment['end']]
+        event_time = time[segment['start']:segment['end']]
         event_go = go.Scatter(
-            x=np.arange(segment['start'],segment['end']),
+            x=event_time,
             y=event_flow,
             mode = 'lines',
             line={'color': 'red', 'width': 1, 'shape': 'spline'},
@@ -64,17 +65,18 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     if event_id != '1':
         title = 'Hydrograph with {0} events'.format(str(len(segments)))
     else:
-        title = 'Hydrograph to verify segmentation'
+        title = 'Hydrograph to validate segmentation'
     
     layout = {
         'title': title,
         'xaxis': {'title': 'Time'},
         'yaxis': {'title': 'Flow (cfs)'},
-        'showlegend': False
+        'showlegend': False,
+        'xaxis_range':[time[0],time[-1]],
     }
     figure = {'data': data, 'layout': layout}
-    #fig = go.Figure(data=data)
     
+
     
     
     hydrograph_plot = PlotlyView(figure, height='520px', width='100%')
@@ -101,13 +103,14 @@ def cqt_event_plot(event_id, sub_event,height='520px', width='100%'):
     
     event_flow = flow[segments[sub_event]['start']:segments[sub_event]['end']]
     event_concentration = concentration[segments[sub_event]['start']:segments[sub_event]['end']]
+    event_time = time[segments[sub_event]['start']:segments[sub_event]['end']]
    
     trajectory_go = go.Scatter3d(
-    x=np.arange(0,len(event_flow)),
+    x=event_time,
     y=event_flow,
     z=event_concentration,
     mode = 'lines',
-    name = 'trajectory',
+    name = 'Trajectory',
     line=dict(
         width=10,
         color=np.arange(0,len(event_flow)),
@@ -360,21 +363,54 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
     
     event_flow = flow[segments[sub_event]['start']:segments[sub_event]['end']]
     event_concentration = concentration[segments[sub_event]['start']:segments[sub_event]['end']]
+    event_time = time[segments[sub_event]['start']:segments[sub_event]['end']]
    
     # Initialize figure with subplots
     fig = make_subplots(
         rows=2, cols=2,
         column_widths=[0.6, 0.4],
         row_heights=[0.4, 0.6],
-        specs=[[{"type": "scatter", "rowspan": 2}, {"type": "xy","secondary_y": True}],
-            [            None                    , {"type": "scatter3d"}]])
-
+        specs=[[{"type": "xy","secondary_y": True,"colspan":2}, None],
+            [{"type": "scatter"}, {"type": "scatter3d"}]])
+            
+        #specs=[[{"type": "xy","secondary_y": True,"colspan":2},{"type": "scatter", "rowspan": 2}],
+        #    [            None                    , {"type": "scatter3d"}]])
+    
+    
+                
+       
+    # Add traces
+    fig.add_trace(
+        go.Scatter(x=event_time, y=event_flow, name="Discharge (Q)", line=dict(
+                        width=4,
+                        color='blue',
+            
+                        ),
+                        ),
+        row=1, col=1,
+        secondary_y=False,
+        
+        
+    )
+    fig.add_trace(
+        go.Scatter(x=event_time, y=event_concentration, name="Concentration (C)",line=dict(
+                        width=4,
+                        color='orange',
+            
+                        ),),
+        row=1, col=1,
+        secondary_y=True,
+    
+    
+    )
+    
+    
     # Add scattergeo globe map of volcano locations
     fig.add_trace(
             go.Scatter(
                 x= event_flow,
                 y = event_concentration,
-                mode = 'lines',
+                mode = 'lines+markers',
                 name = 'Hysteresis',
                 fill='toself',
                 
@@ -383,47 +419,23 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
                         color='#1f77b4',
             
                         ),
+                marker=dict(
+                size=10,
+                color=np.arange(0,len(event_flow)),
+                colorscale='Viridis',
+            )
+                        
                     
                    
             
             ),
-            row=1, col=1
+            row=2, col=1
                 )
-                
-
-            
-    # Add traces
-    fig.add_trace(
-        go.Scatter(x=np.arange(0,len(event_flow)), y=event_flow, name="Discharge (Q)", line=dict(
-                        width=4,
-                        color='blue',
-            
-                        ),
-                        ),
-        row=1, col=2,
-        secondary_y=False,
-        
-        
-    )
-    fig.add_trace(
-        go.Scatter(x=np.arange(0,len(event_flow)), y=event_concentration, name="Concentration (C)",line=dict(
-                        width=4,
-                        color='orange',
-            
-                        ),),
-        row=1, col=2,
-        secondary_y=True,
-    
-    
-    )
-    
-    
-    
     
     # Add 3d surface of volcano
     fig.add_trace(
         go.Scatter3d(
-            x=np.arange(0,len(event_flow)),
+            x=event_time,
             y=event_flow,
             z=event_concentration,
             mode = 'lines',
@@ -433,6 +445,7 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
                 color=np.arange(0,len(event_flow)),
                 colorscale='Viridis',
             )
+            
     
         ),
         row=2, col=2

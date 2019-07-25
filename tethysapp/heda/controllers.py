@@ -8,7 +8,7 @@ from django.shortcuts import reverse
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation
+from .model import add_new_data,segmentation,upload_trajectory
 from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot,cqt_cq_event_plot
 
 from tethys_sdk.permissions import has_permission
@@ -125,7 +125,6 @@ def add_data(request,event_id=1):
     start_date_error = ''
     end_date_error = ''
     PKThreshold_error  =''
-    file_path_error = ''
     fc_error = ''
     fc = ''
     PKThreshold = '' 
@@ -135,8 +134,42 @@ def add_data(request,event_id=1):
     SC = ''
     MINDUR = ''
     dyslp = ''
-    
+    hydrograph_file_error = ''
+    hydrograph_file = None
     hydrograph_plot = create_hydrograph(event_id)
+
+
+
+
+    # Case where the form has been submitted
+    if request.POST and 'upload-button' in request.POST:
+        # Get Values
+        has_errors = False
+        
+        # Get File
+        if request.FILES and 'hydrograph-file' in request.FILES:
+            # Get a list of the files
+            hydrograph_file = request.FILES.getlist('hydrograph-file')
+            
+
+        if not hydrograph_file:
+            has_errors = True
+            hydrograph_file_error = 'Hydrograph File is Required.'
+
+        if not has_errors:
+            # Process file here
+            success = upload_trajectory(hydrograph_file[0])
+            print(success)
+            # Provide feedback to user
+            if success:
+                messages.info(request, 'Successfully uploaded trajectory.')
+            else:
+                messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
+            
+            return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
+
+        messages.error(request, "Please fix errors.")
+
 
     
     if request.POST and 'segment-button' in request.POST:
@@ -211,6 +244,7 @@ def add_data(request,event_id=1):
         if not has_errors:
             
             event_id = add_new_data(sites=site_number, start=start_date,end = end_date)
+            print('add new data completed')
             #hydrograph_plot =create_hydrograph(event_id)
             
             
@@ -244,13 +278,7 @@ def add_data(request,event_id=1):
         #attributes={'form': 'retrieve-form'},
     )
     
-    # Define form gizmos
-    file_path_input = TextInput(
-        placeholder='File Path',
-        name='file-path',
-        error=file_path_error,
-        #attributes={'form': 'upload-data-form'},
-    )
+    
     
     
     start_date_input = DatePicker(
@@ -376,15 +404,6 @@ def add_data(request,event_id=1):
         submit=True
     )
     
-    browse_button = Button(
-        display_text='Browse',
-        name='browse-button',
-        style='success',
-        attributes={'form': 'upload-data-form'},
-        
-        submit=True
-    )
-    
     
     cancel_button = Button(
         display_text='Cancel',
@@ -403,6 +422,16 @@ def add_data(request,event_id=1):
     download_button = Button(
         display_text='Download',
         name='Download',
+    )
+    
+    
+    upload_button = Button(
+        display_text='Upload',
+        name='upload-button',
+        icon='glyphicon glyphicon-plus',
+        style='success',
+        attributes={'form': 'upload-data-form'},
+        submit=True
     )
         
 
@@ -424,8 +453,9 @@ def add_data(request,event_id=1):
         'MINDUR_input':MINDUR_input,
         'dyslp_input':dyslp_input,
         'download_button':download_button,
-        'browse_button': browse_button,
-        'file_path_input':file_path_input,
+        'upload_button': upload_button,
+        'hydrograph_file_error': hydrograph_file_error,
+        
         
 
     }

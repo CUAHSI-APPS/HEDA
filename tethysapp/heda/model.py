@@ -12,11 +12,11 @@ from .api_access import fetch_data, extract_values #extract_tag
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-
+from datetime import datetime
 
 #import json
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy import Column, Integer, Float, String, DateTime
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 
@@ -51,9 +51,12 @@ def add_new_data(sites, start,end):
         parameters['startDT'] = start
         parameters['endDT'] = end
         
+        print(start)
+        
+        
         #discharge 00060
         #tributry 63680
-        parameters['parameterCd']='00060,00065'
+        parameters['parameterCd']='00060,63680'
         parameters['siteStatus']='all'
         
         Host =  'https://waterservices.usgs.gov/nwis/iv/'
@@ -70,7 +73,7 @@ def add_new_data(sites, start,end):
             y = json.loads(response.text)
             
     
-            print(y)
+        
     
             discharge_json = y['value']['timeSeries'][0]['values']
             SSC_json = y['value']['timeSeries'][1]['values']
@@ -78,19 +81,25 @@ def add_new_data(sites, start,end):
         
             discharge = extract_values(discharge_json, 'value')
             SSC = extract_values(SSC_json, 'value')
-        
+            time = extract_values(SSC_json, 'dateTime')
+            for i in range(0,len(time)):
+                time[i] = time[i].replace('T',' ')
+                datetime_object = datetime.strptime(time[i][0:-10],"%Y-%m-%d %H:%M:%S")
+                time[i] = datetime_object
             
             trajectory_points = []
             for i in range(0,len(discharge)):
                 try:
-                    time = i
+                    date_time = time[i]
                     flow = discharge[i]
                     concentration = SSC[i]
-                    trajectory_points.append(TrajectoryPoint(time=time, flow=flow,concentration=concentration))
+                
+                    trajectory_points.append(TrajectoryPoint(index = i, time=date_time, flow=flow,concentration=concentration))
+                    
                 except ValueError:
                     continue
             
-            # Create new event record
+            #Create new event record
             #new_data_id = uuid.uuid4()
             new_event = Event(
                 #id = str(new_data_id),
@@ -172,7 +181,7 @@ def init_primary_db(engine, first_time):
         )
         
         trajectory_points = []
-        trajectory_points.append(TrajectoryPoint(time=0, flow=0,concentration=0))
+        trajectory_points.append(TrajectoryPoint(index = 0, time=datetime.strptime('2000-01-01 00:00:00',"%Y-%m-%d %H:%M:%S"), flow=0,concentration=0))
         
         trajectory = Trajectory()
         Event1.trajectory = trajectory
@@ -220,7 +229,8 @@ class TrajectoryPoint(Base):
     # Columns
     id = Column(Integer, primary_key=True)
     trajectory_id = Column(ForeignKey('trajectories.id'))
-    time = Column(Integer)  #: 15 minute interval number
+    index = Column(Integer)
+    time = Column(DateTime)  #: 15 minute interval number
     flow = Column(Float)  #: cfs
     concentration = Column(Float) #: mg/l
 
@@ -279,7 +289,7 @@ def get_conc_flow_seg(event_id):
     # Query for all dam records
     #events = session.query(Event).all()
     session.close()
-
+    
     return time,flow,concentration,segments
     
 
@@ -345,18 +355,17 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         #    time.append(point.time)
         print('event id for segmentation: '+str(event_id))
         segments = []
-        #fc = 0.995
-        #PKThreshold = 0.03
-        #ReRa = 0.1
+        
         time,flow,concentration,segments=get_conc_flow_seg(event_id)
-        print('flow recieved')
+        
         stormflow,baseflow = separatebaseflow(flow,fc,4)
-        print('base flow seperated')
+        
         runoffEvents, nRunoffEvent = extractrunoff(stormflow, PKThreshold, ReRa, BSLOPE=0.001, ESLOPE = 0.0001, SC=4,MINDUR = 0, dyslp = 0.001)
         print('run off events'+str(nRunoffEvent))
         
         for i in range(0,nRunoffEvent):
             event_indexes = runoffEvents[i][:,0]
+            print('event indexes')
             print(event_indexes)
             segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
         
@@ -674,5 +683,65 @@ def extractrunoff(stormflow, MINDIFF, RETURNRATIO, BSLOPE, ESLOPE, SC, MINDUR = 
  
     return runoffEvents, nEvent
 
-                      
+def upload_trajectory(hydrograph_file):
+    """
+    Parse hydrograph file and add to database, assigning to appropriate dam.
+    """
+    # Parse file
+    trajectory_points = []
     
+    try:
+        
+        for line in hydrograph_file:
+            
+            
+            sline = line.decode().split(',')
+            
+            try:
+                
+                time = int(sline[0])
+                flow = float(sline[1])
+                
+                concentration = float(sline[2])
+                print(concentration)
+                trajectory_points.append(TrajectoryPoint(time=time, flow=flow,concentration=concentration))
+            except ValueError:
+                continue
+                print('value error')
+
+        
+        if len(trajectory_points) > 0:
+            print(len(trajectory_points))
+            #Create new event record
+            #new_data_id = uuid.uuid4()
+            new_event = Event(
+                #id = str(new_data_id),
+                siteNumber='manual',
+                siteName = 'manual',
+                startDate = trajectory_points[0].time,
+                endDate = trajectory_points[-1].time
+            
+            )
+            trajectory = Trajectory()
+            new_event.trajectory = trajectory
+            trajectory.points = trajectory_points
+            
+            # Get connection/session to database
+            Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
+            session = Session()
+    
+            # Add the new dam record to the session
+            session.add(new_event)
+            session.flush()
+            event_id = new_event.id
+            # Commit the session and close the connection
+            session.commit()
+            session.close()
+            
+
+    except Exception as e:
+        # Careful not to hide error. At the very least log it to the console
+        print(e)
+        return False
+
+    return event_id

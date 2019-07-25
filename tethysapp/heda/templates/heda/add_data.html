@@ -2,7 +2,7 @@
 {% load tethys_gizmos %}
 
 {% block app_content %}
-  <h1>Retrieve Data</h1>
+  <h2>Retrieve data from USGS</h2>
 <form id="add-data-form" method="post">
     <div class="container">
         <div class="row">
@@ -18,25 +18,26 @@
             </div>
         </div>
     </div>
+    {% gizmo retrieve_button %}
 </form>
-<form id="upload-data-form" method="post">
-  <h1>Upload Data</h1>
-  <div class="row">
-      <div class="col-sm-6">
-        {% gizmo file_path_input %}
-      </div>
-      <div class="col-sm-6">
-        {% gizmo browse_button %}
-      </div>
-  </div>
+<hr />
 
-
+<h2>Upload data file</h2>
+<form id="upload-data-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="form-group{% if hydrograph_file_error %} has-error{% endif %}">
+        <label class="control-label">Data File</label>
+        <input type="file" name="hydrograph-file">
+            {% if hydrograph_file_error %}<p class="help-block">{{ hydrograph_file_error }}</p>{% endif %}
+            </div>
+    {% gizmo upload_button %}
 </form>
-  
- 
+<hr />
 
-    <h1>Event Segmentation Parameters</h1>
+<h2>Event segmentation</h2>
 <form id="segment-data-form" method="post">
+    <h3>HydRun parameters</h3>
     {% csrf_token %}
     <div class="container">
         <div class="row">
@@ -50,9 +51,10 @@
                 {% gizmo ReRa_input %}
             </div>
             <div class="col-sm-2">
-                {% gizmo BSLOPE_input %}
+                {% gizmo MINDUR_input %}
             </div>
         </div>
+        <h3>Optional HydRun parameters</h3>
         <div class="row">
             <div class="col-sm-2">
                 {% gizmo ESLOPE_input %}
@@ -61,7 +63,8 @@
                 {% gizmo SC_input %}
             </div>
             <div class="col-sm-2">
-                {% gizmo MINDUR_input %}
+                {% gizmo BSLOPE_input %}
+                
             </div>
             <div class="col-sm-2">
                 {% gizmo dyslp_input %}
@@ -76,7 +79,6 @@
 {% block app_actions %}
   {% gizmo cancel_button %}
   {% gizmo segment_button %}
-  {% gizmo retrieve_button %}
   {% gizmo download_button %}
   {% gizmo visualize_button %}
 {% endblock %}
