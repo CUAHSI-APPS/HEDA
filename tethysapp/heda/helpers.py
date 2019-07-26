@@ -38,7 +38,7 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             y=flow,
             name='Hydrograph',
             mode = 'lines',
-            line={'color': 'blue', 'width': 4},
+            line={'color': 'blue', 'width': 1},
     )
     
    
@@ -53,7 +53,7 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             x=event_time,
             y=event_flow,
             mode = 'lines',
-            line={'color': 'red', 'width': 1, 'shape': 'spline'},
+            line={'color': 'red', 'width': 4, 'shape': 'spline'},
             
         
         )
