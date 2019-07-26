@@ -682,6 +682,67 @@ def extractrunoff(stormflow, MINDIFF, RETURNRATIO, BSLOPE, ESLOPE, SC, MINDUR = 
     
  
     return runoffEvents, nEvent
+    
+    
+def calculate_metrics(event_id,sub_event):
+    """
+    Get data.
+    """
+    sub_event = int(sub_event)
+    Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
+    session = Session()
+    event = session.query(Event).get(int(event_id))
+    
+    trajectory = event.trajectory
+    time = []
+    flow = []
+    concentration = []
+    
+    for point in trajectory.points:
+        flow.append(point.flow)
+        concentration.append(point.concentration)
+        time.append(point.time)
+    
+    segments = []
+    for segment in trajectory.segments:
+        d={}
+        d['start'] = segment.start
+        d['end'] = segment.end
+
+        segments.append(d)
+    
+    
+    
+    session.close()
+    
+    #seperate sub event
+    
+    event_flow = flow[segments[sub_event]['start']:segments[sub_event]['end']]
+    event_concentration = concentration[segments[sub_event]['start']:segments[sub_event]['end']]
+    event_time = time[segments[sub_event]['start']:segments[sub_event]['end']]
+    
+    metrics_dict = {}
+    
+    metrics_dict['Time of start'] = event_time[0]
+    metrics_dict['Time of end'] = event_time[-1]
+    metrics_dict['Duration'] = event_time[-1] - event_time[0]
+    
+    metrics_dict['Peak discharge'] = max(event_flow)
+    metrics_dict['Initial baseflow'] = max(event_flow)
+    
+    metrics_dict['Time to peak discharge'] = event_time[np.argmax(event_flow)] - event_time[0]
+    #metrics_dict['Flood intensity '] = (max(event_flow) - max(event_flow))/ (event_time[np.argmax(event_flow)] - event_time[0])
+    metrics_dict['Q recess'] = event_flow[-1] - event_flow[0]
+    
+    
+    metrics_dict['Peak concentration'] = max(event_concentration)
+    metrics_dict['Time to peak concentration'] = event_time[np.argmax(event_concentration)] - event_time[0]
+    metrics_dict['Difference between peak Q and peak C'] = metrics_dict['Time to peak concentration'] - metrics_dict['Time to peak discharge'] 
+    #metrics_dict['HI']
+    #metrics_dict['HI']
+    
+    
+    return metrics_dict
 
 def upload_trajectory(hydrograph_file):
     """
@@ -689,29 +750,30 @@ def upload_trajectory(hydrograph_file):
     """
     # Parse file
     trajectory_points = []
-    
+    segments_all = set()
     try:
         
         for line in hydrograph_file:
             
             
             sline = line.decode().split(',')
-            
+            print(sline)
             try:
-                
-                time = int(sline[0])
-                flow = float(sline[1])
-                
-                concentration = float(sline[2])
-                print(concentration)
-                trajectory_points.append(TrajectoryPoint(time=time, flow=flow,concentration=concentration))
+                index = int(sline[0])
+                time = sline[1]
+                flow = float(sline[2])
+                concentration = float(sline[3])
+                segment = int(sline[4])
+                segments_all.add(segment)
+                time = datetime.strptime(time,"%Y-%m-%d %H:%M:%S")
+                trajectory_points.append(TrajectoryPoint(index = index, time=time, flow=flow,concentration=concentration))
             except ValueError:
                 continue
                 print('value error')
 
         
         if len(trajectory_points) > 0:
-            print(len(trajectory_points))
+            print('length of uploaded trajectory: '+str(len(trajectory_points)))
             #Create new event record
             #new_data_id = uuid.uuid4()
             new_event = Event(
@@ -726,6 +788,11 @@ def upload_trajectory(hydrograph_file):
             new_event.trajectory = trajectory
             trajectory.points = trajectory_points
             
+            #get index of all unique numbers other than zero in segments_all, add start and end indexes
+            #segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
+        
+        
+            #trajectory.segments = segments
             # Get connection/session to database
             Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
             session = Session()
@@ -734,9 +801,12 @@ def upload_trajectory(hydrograph_file):
             session.add(new_event)
             session.flush()
             event_id = new_event.id
+            print('event uploaded as event id: '+str(event_id))
             # Commit the session and close the connection
             session.commit()
             session.close()
+            
+            return event_id
             
 
     except Exception as e:
@@ -744,4 +814,4 @@ def upload_trajectory(hydrograph_file):
         print(e)
         return False
 
-    return event_id
+    

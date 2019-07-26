@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
 from tethys_sdk.permissions import login_required
-from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker
+from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView
 
 from django.shortcuts import reverse
 
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation,upload_trajectory
+from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics
 from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot,cqt_cq_event_plot
 
 from tethys_sdk.permissions import has_permission
@@ -159,7 +159,7 @@ def add_data(request,event_id=1):
         if not has_errors:
             # Process file here
             success = upload_trajectory(hydrograph_file[0])
-            print(success)
+            print('trajectory function returned with event id as : '+str(success))
             # Provide feedback to user
             if success:
                 messages.info(request, 'Successfully uploaded trajectory.')
@@ -467,8 +467,7 @@ def add_data(request,event_id=1):
 @login_required()
 def visualize_events(request,event_id,sub_event):
 
-        
-    print(sub_event)
+
     
     
     cancel_button = Button(
@@ -501,14 +500,31 @@ def visualize_events(request,event_id,sub_event):
     #hydrograph_plot = create_hydrograph(1)
     
     
-    cqt_plot = cqt_event_plot(int(event_id),int(sub_event))
-    cq_plot = cq_event_plot(int(event_id),int(sub_event))
-    candq_plot = candq_event_plot(int(event_id),int(sub_event))
+    #cqt_plot = cqt_event_plot(int(event_id),int(sub_event))
+    #cq_plot = cq_event_plot(int(event_id),int(sub_event))
+    #candq_plot = candq_event_plot(int(event_id),int(sub_event))
     cqt_cq_plot = cqt_cq_event_plot(int(event_id),int(sub_event))
+    
+    table_rows = []
+    metrics_dict = calculate_metrics(event_id,sub_event)
+    
+    for k in metrics_dict.keys():
+        table_rows.append((k,metrics_dict[k]))
+    
+    
     
     if request.POST and 'previous-button' in request.POST:
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
         
+        
+    metric_table = DataTableView(
+        column_names=('Name', 'Value'),
+        rows=table_rows,
+        searching=False,
+        orderClasses=False,
+        lengthMenu=[ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+    )
+
     
     context = {
         #'candq_plot':candq_plot,
@@ -518,6 +534,7 @@ def visualize_events(request,event_id,sub_event):
         'previous_button': previous_button,
         'download_button':download_button,
         'next_button':next_button,
+        'metric_table':metric_table
         
 
     }

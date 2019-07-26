@@ -2,7 +2,9 @@
 {% load tethys_gizmos %}
 {% load staticfiles%}
 
+
 {% block app_content %}
+<img src="{% static '/heda/images/HEDA_Logo.png' %}" width=256 height=256>
 <h3>
 About
 </h3>
@@ -32,7 +34,7 @@ Input Files:
     
 To use HEDA on user uploaded files, the data must be formatted as a .csv. An example file is provided:
 <br \>
-<p>Click =<a href="{% static '/heda/files/example_file.csv' %}">here</a> to download example file</p>
+<p>Click <a href="{% static '/heda/files/example_file.csv' %}">here</a> to download example file</p>
 <h3>
 What’s New:
 </h3>

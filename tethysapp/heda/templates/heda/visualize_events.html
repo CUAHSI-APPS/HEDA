@@ -3,9 +3,13 @@
 
 {% block app_content %}
     {% spaceless %}
-        <h1>Event Visualization</h1>
+        <h2>Event visualization</h2>
             {% gizmo cq_plot %}
     {% endspaceless %}
+        <h2>Event metrics</h2>
+            {% gizmo metric_table %}
+
+
 {% endblock %}
 
 
