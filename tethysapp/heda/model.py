@@ -20,6 +20,7 @@ from sqlalchemy import Column, Integer, Float, String, DateTime
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 
+import csv
 import copy 
 
 
@@ -335,46 +336,36 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         
         
         # Overwrite old hydrograph
-        segments = event.trajectory.segments
+        
     
         # Create new hydrograph if not assigned already
-        if not segments:
-            segments = []
-            #segments.append(Segments(start = 0, end = 0))
-            event.trajectory.segments = segments
-    
+        
+        segments = []
+        
+        event.trajectory.segments = copy.deepcopy(segments)
+        
         # Remove old points if any
+        
         for segment in event.trajectory.segments:
             session.delete(segment)
+        
     
-        trajectory = event.trajectory
-        #time = []
         
-        
-        #for point in trajectory.points:
-        #    time.append(point.time)
-        print('event id for segmentation: '+str(event_id))
-        segments = []
         
         time,flow,concentration,segments=get_conc_flow_seg(event_id)
         
         stormflow,baseflow = separatebaseflow(flow,fc,4)
         
         runoffEvents, nRunoffEvent = extractrunoff(stormflow, PKThreshold, ReRa, BSLOPE=0.001, ESLOPE = 0.0001, SC=4,MINDUR = 0, dyslp = 0.001)
-        print('run off events'+str(nRunoffEvent))
         
+        segments = []
         for i in range(0,nRunoffEvent):
             event_indexes = runoffEvents[i][:,0]
-            print('event indexes')
-            print(event_indexes)
             segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
         
         
         event.trajectory.segments = segments
-         
-        #segments.append(Segments(start = 0,end = int(len(time)/2)))
-        #segments.append(Segments(start = int(len(time)/2), end = len(time)-1))
-           
+        
         
         
         
@@ -563,10 +554,13 @@ def extractrunoff(stormflow, MINDIFF, RETURNRATIO, BSLOPE, ESLOPE, SC, MINDUR = 
 
  
     #Remove incomplete event(s) at the beginning and at the end
+    
     while TP[0, 1] == 1:
-        np.delete(TP[0])
+        
+        TP = TP[1:, :] 
     while TP[-1, 1] == 1:
-        np.delete(TP[-1])  
+        TP = TP[:-1, :]
+        
 
 
     #Step 3: Identify the Start and End Points of Runoff Event 
@@ -751,6 +745,7 @@ def upload_trajectory(hydrograph_file):
     # Parse file
     trajectory_points = []
     segments_all = set()
+    segment_index = []
     try:
         
         for line in hydrograph_file:
@@ -764,6 +759,7 @@ def upload_trajectory(hydrograph_file):
                 flow = float(sline[2])
                 concentration = float(sline[3])
                 segment = int(sline[4])
+                segment_index.append(segment)
                 segments_all.add(segment)
                 time = datetime.strptime(time,"%Y-%m-%d %H:%M:%S")
                 trajectory_points.append(TrajectoryPoint(index = index, time=time, flow=flow,concentration=concentration))
@@ -790,8 +786,18 @@ def upload_trajectory(hydrograph_file):
             
             #get index of all unique numbers other than zero in segments_all, add start and end indexes
             #segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
+            segment_index = np.asarray(segment_index)
+            segments = []
+            print(segments_all)
+            for segment in segments_all:
+                if segment != 0:
+                    ii = np.where(segment_index == segment)[0]
+                    segments.append(Segments(start = int(ii[0]),end = int(ii[-1])))
         
         
+        
+            print(len(segments))
+            new_event.trajectory.segments = segments
             #trajectory.segments = segments
             # Get connection/session to database
             Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
@@ -814,4 +820,55 @@ def upload_trajectory(hydrograph_file):
         print(e)
         return False
 
+def download_file(event_id): 
+    
+    try:
+        Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
+        session = Session()
+        event = session.query(Event).get(int(event_id))
+        
+        
+        
+        
+        
+        rows = []
+        segment_list = np.zeros(len(event.trajectory.points))
+        seg_num = 1
+        for segment in event.trajectory.segments:
+            segment_list[segment.start:segment.end] = seg_num
+            seg_num +=1
+        i = 0
+        rows = []
+        for point in event.trajectory.points:
+            d= {}
+            d['index'] = point.index
+            d['time'] = point.time
+            d['flow'] = point.flow
+            d['concentration'] = point.concentration
+            d['segment'] = int(segment_list[i])
+            i = i+1
+            rows.append(d)
+    
+        #close the session
+        session.close()
+        
+        
+        
+        
+        #create a file and return path, and download file
+        #fname = str(event_id)+'_file.csv'
+        fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file.csv'
+        fout = open(fname, 'w')
+        csvw = csv.DictWriter(fout, fieldnames = ['index','time','flow','concentration','segment'])
+        csvw.writeheader()
+        csvw.writerows(rows)
+        fout.close()
+        
+    
+        return fname
+    except Exception as e:
+        # Careful not to hide error. At the very least log it to the console
+        print(e)
+        return False
+    
     

@@ -8,10 +8,18 @@ from django.shortcuts import reverse
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics
+from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics,download_file
 from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot,cqt_cq_event_plot
 
 from tethys_sdk.permissions import has_permission
+
+from django.views.static import serve
+import os
+
+
+from django.http import HttpResponse
+from wsgiref.util import FileWrapper
+
 
 @login_required()
 def home(request):
@@ -112,10 +120,12 @@ def add_data(request,event_id=1):
     """
 
     # Default Values
-    site_number = '01646500'
+    #site_number = '01646500'
+    site_number = '01362500'
     start_date = ''
     end_date =''
     segment_done_button_disable = True
+    download_button_disable = False
     if event_id == 1 or event_id == '1':
         segment_button_disable= True
     else:
@@ -163,6 +173,7 @@ def add_data(request,event_id=1):
             # Provide feedback to user
             if success:
                 messages.info(request, 'Successfully uploaded trajectory.')
+                download_button_disable = False
             else:
                 messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
             
@@ -204,7 +215,7 @@ def add_data(request,event_id=1):
             status = segmentation(event_id,float(fc),float(PKThreshold),float(ReRa),float(BSLOPE),float(ESLOPE),float(SC),float(MINDUR),float(dyslp))
             
             if not status:
-                messages.error(request, "Please fix parameters")
+                messages.error(request, "Segmentation failed. Please retrieve data again and try or change parameters.")
                 hydrograph_plot = create_hydrograph(event_id)
                 
                 
@@ -212,6 +223,7 @@ def add_data(request,event_id=1):
                 
                 hydrograph_plot = create_hydrograph(event_id)
                 segment_done_button_disable = False
+                download_button_disable = False
             
             
         else:
@@ -252,8 +264,10 @@ def add_data(request,event_id=1):
                 messages.error(request, "Unable to retrieve data please check parameters or try again later.")
                 segment_button_disable = True
                 
+                
             else:
                 segment_button_disable = False
+                
                 return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
                 
             
@@ -263,8 +277,38 @@ def add_data(request,event_id=1):
 
             messages.error(request, "Please fix errors.")
             
+    print(request.POST)
+    if request.POST and 'download-button' in request.POST:
+        # Get Values
+        has_errors = False
+        print('download clicked')
+
+        if not has_errors:
+            # Process file here
+            success = download_file(event_id)
+            print('download file returned : '+str(success))
+            # Provide feedback to user
+            if success:
+                
+               
+                filename = success
+                fname = 'HEDA_download'
+                content = FileWrapper(open(filename))
+                response = HttpResponse(content, content_type='text/csv')
+               
+                
+                response['Content-Disposition'] = 'attachment; filename=%s' % fname
+                return response
+                
+                
+            else:
+                messages.info(request, 'Unable to download data file.')
             
-    
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
+
+        messages.error(request, "Unknown problem.")
+
+        
     
         
 
@@ -301,7 +345,7 @@ def add_data(request,event_id=1):
         start_view='decade',
         today_button=True,
         error=end_date_error,
-        initial = '2019-06-05',
+        initial = '2019-06-25',
         #attributes={'form': 'retrieve-form'},
     )
 
@@ -421,7 +465,14 @@ def add_data(request,event_id=1):
     
     download_button = Button(
         display_text='Download',
-        name='Download',
+        name='download-button',
+        disabled = download_button_disable,
+        submit=True,
+        icon='glyphicon glyphicon-download',
+        style='success',
+        attributes={'form': 'segment-data-form'},
+        
+        
     )
     
     
@@ -487,7 +538,10 @@ def visualize_events(request,event_id,sub_event):
         
     download_button = Button(
         display_text='Download',
-        name='Download',
+        name='download-button',
+        #disabled = download_button_disable,
+        submit=True
+        
     )
     
     next_button = Button(
