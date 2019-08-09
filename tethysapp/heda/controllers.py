@@ -145,6 +145,7 @@ def add_data(request,event_id=1):
     MINDUR = ''
     dyslp = ''
     hydrograph_file_error = ''
+    concentration_number_error = ''
     hydrograph_file = None
     hydrograph_plot = create_hydrograph(event_id)
 
@@ -237,13 +238,13 @@ def add_data(request,event_id=1):
         site_number = request.POST.get('site-number', None)
         start_date = request.POST.get('start-date', None)
         end_date = request.POST.get('end-date', None)
-        
-        
+        concentration_parameter = request.POST.get('concentration-parameter',None)
+       
         # Validate
         if not site_number:
             has_errors = True
             site_number_error = 'Site Number is required.'
-            print('site number error')
+            
         if not start_date:
             has_errors = True
             start_date_error = 'Start date is required.'
@@ -252,14 +253,18 @@ def add_data(request,event_id=1):
             has_errors = True
             end_date_error = 'End date is required.'
             
+        if not concentration_parameter:
+            has_errors  = True
+            concentration_parameter = 'Concentration parameter is required'
+            
 
         if not has_errors:
+        
+            event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter)
             
-            event_id = add_new_data(sites=site_number, start=start_date,end = end_date)
-            print('add new data completed')
             #hydrograph_plot =create_hydrograph(event_id)
             
-            
+            print('Event '+str(event_id) +'added')
             if not event_id:
                 messages.error(request, "Unable to retrieve data please check parameters or try again later.")
                 segment_button_disable = True
@@ -320,6 +325,16 @@ def add_data(request,event_id=1):
         placeholder='e.g.: 01646500',
         error=site_number_error,
         #attributes={'form': 'retrieve-form'},
+    )
+    
+    # Define form gizmos
+    concentration_parameter_input = TextInput(
+        display_text='Concentration code',
+        name='concentration-parameter',
+        placeholder='e.g.: 63680',
+        initial='63680',
+        error=concentration_number_error,
+        
     )
     
     
@@ -506,6 +521,7 @@ def add_data(request,event_id=1):
         'download_button':download_button,
         'upload_button': upload_button,
         'hydrograph_file_error': hydrograph_file_error,
+        'concentration_parameter_input':concentration_parameter_input,
         
         
 

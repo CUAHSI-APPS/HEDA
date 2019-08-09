@@ -31,7 +31,7 @@ Base = declarative_base()
 def dummy():
     return True
 
-def add_new_data(sites, start,end):
+def add_new_data(sites, start,end,concentration):
     """
     Persist new dam.
     """
@@ -49,16 +49,23 @@ def add_new_data(sites, start,end):
         parameters = {}
         parameters['format']= 'json'
         parameters['sites']= sites
+        
         parameters['startDT'] = start
         parameters['endDT'] = end
         
-        print(start)
         
         
+        parameter_retrieve = '00060,'+str(concentration)
         #discharge 00060
         #tributry 63680
-        parameters['parameterCd']='00060,63680'
+        #parameters['parameterCd']='00060,63680'
+        print(parameter_retrieve)
+        parameters['parameterCd'] = parameter_retrieve
+        
         parameters['siteStatus']='all'
+        
+        
+        print(parameters)
         
         Host =  'https://waterservices.usgs.gov/nwis/iv/'
         

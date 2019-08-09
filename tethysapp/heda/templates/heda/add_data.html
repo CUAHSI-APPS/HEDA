@@ -7,13 +7,16 @@
     <div class="container">
         <div class="row">
             {% csrf_token %}
-            <div class="col-sm-3">
+            <div class="col-sm-2">
                 {% gizmo site_number_input %}
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-2">
+                {% gizmo concentration_parameter_input %}
+            </div>
+            <div class="col-sm-2">
                 {% gizmo start_date_input %}
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-2">
                 {% gizmo end_date_input %}
             </div>
         </div>
