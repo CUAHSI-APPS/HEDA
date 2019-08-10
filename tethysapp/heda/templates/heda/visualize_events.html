@@ -3,8 +3,30 @@
 
 {% block app_content %}
     {% spaceless %}
-        <h2>Event visualization</h2>
-            {% gizmo cq_plot %}
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-3">
+                     {% gizmo previous_button %}
+                    
+                </div>
+                <div class="col-sm-3">
+                    <h2>Event # {{ sub_event }}</h2>
+                </div>
+                <div class="col-sm-3">
+                    {% gizmo next_button %}
+                   
+                </div>
+                
+            </div>
+            
+        </div>
+    <form id="slider-data-form" method="post">
+        {% csrf_token %}
+        {% gizmo event_number_slider %}
+    </form>
+        {% gizmo jump_button %}
+
+        {% gizmo cq_plot %}
     {% endspaceless %}
         <h2>Event metrics</h2>
             {% gizmo metric_table %}
@@ -16,9 +38,9 @@
 
 {% block app_actions %}
     {% gizmo cancel_button %}
-    {% gizmo previous_button %}
+
     {% gizmo download_button %}
-    {% gizmo next_button %}
+
 {% endblock %}
 
 

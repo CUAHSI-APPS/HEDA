@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
 from tethys_sdk.permissions import login_required
-from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView
+from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView,RangeSlider
 
 from django.shortcuts import reverse
 
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics,download_file
-from .helpers import create_hydrograph,cqt_event_plot,cq_event_plot,candq_event_plot,cqt_cq_event_plot
+from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics,download_file,get_conc_flow_seg
+from .helpers import create_hydrograph,cqt_cq_event_plot
 
 from tethys_sdk.permissions import has_permission
 
 from django.views.static import serve
-import os
+
 
 
 from django.http import HttpResponse
@@ -114,44 +114,59 @@ def home(request):
 
 
 @login_required()
-def add_data(request,event_id=1):
+def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True ):
     """
     Controller for the Add Data page.
+    
     """
 
     # Default Values
     #site_number = '01646500'
-    site_number = '01362500'
-    start_date = ''
-    end_date =''
-    segment_done_button_disable = True
-    download_button_disable = False
+    #site_number = '01362500'
+    #start_date = ''
+    #end_date =''
+    if segment_button_disable =='False':
+        segment_button_disable = False
+    else:
+        segment_button_disable = True
+    
+    if download_button_disable == 'False':
+        download_button_disable = False
+    else:
+        download_button_disable=True
+        
+    
+    
+    
     if event_id == 1 or event_id == '1':
         segment_button_disable= True
-    else:
-        segment_button_disable= False
+        download_button_disable=True
+    
     # Errors
     site_number_error = ''
     start_date_error = ''
     end_date_error = ''
     PKThreshold_error  =''
     fc_error = ''
-    fc = ''
-    PKThreshold = '' 
-    ReRa = ''
-    BSLOPE = ''
-    ESLOPE = ''
-    SC = ''
-    MINDUR = ''
-    dyslp = ''
     hydrograph_file_error = ''
     concentration_number_error = ''
     hydrograph_file = None
     hydrograph_plot = create_hydrograph(event_id)
 
+    #segmentation parameters
+    #fc = ''
+    #PKThreshold = '' 
+    #ReRa = ''
+    #BSLOPE = ''
+    #ESLOPE = ''
+    #SC = ''
+    #MINDUR = ''
+    #dyslp = ''
 
-
-
+    
+    
+    
+    
     # Case where the form has been submitted
     if request.POST and 'upload-button' in request.POST:
         # Get Values
@@ -175,10 +190,14 @@ def add_data(request,event_id=1):
             if success:
                 messages.info(request, 'Successfully uploaded trajectory.')
                 download_button_disable = False
+                segment_button_disable = False
+                event_id = str(success)
             else:
                 messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
             
-            return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
+            #return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
+                    
 
         messages.error(request, "Please fix errors.")
 
@@ -222,9 +241,13 @@ def add_data(request,event_id=1):
                 
             else:
                 
-                hydrograph_plot = create_hydrograph(event_id)
-                segment_done_button_disable = False
+                segment_button_disable = False
                 download_button_disable = False
+                
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
+                
+                #hydrograph_plot = create_hydrograph(event_id)
+                
             
             
         else:
@@ -260,29 +283,33 @@ def add_data(request,event_id=1):
 
         if not has_errors:
         
+            #segmentation parameters
+            
             event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter)
             
             #hydrograph_plot =create_hydrograph(event_id)
             
             print('Event '+str(event_id) +'added')
             if not event_id:
-                messages.error(request, "Unable to retrieve data please check parameters or try again later.")
+                messages.error(request, "Unable to retrieve data please check parameters or try again after a few minutes.")
                 segment_button_disable = True
                 
                 
             else:
                 segment_button_disable = False
+                download_button_disable = False
                 
-                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
+                #return redirect(reverse('heda:add_data', kwargs={"event_id": '92',"site_number":'test',"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter}))
+                
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
                 
             
             
-            #return redirect(reverse('heda:add_data'))
         else:
 
             messages.error(request, "Please fix errors.")
             
-    print(request.POST)
+    
     if request.POST and 'download-button' in request.POST:
         # Get Values
         has_errors = False
@@ -309,7 +336,9 @@ def add_data(request,event_id=1):
             else:
                 messages.info(request, 'Unable to download data file.')
             
-            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp}))
+                
+            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
 
         messages.error(request, "Unknown problem.")
 
@@ -332,7 +361,7 @@ def add_data(request,event_id=1):
         display_text='Concentration code',
         name='concentration-parameter',
         placeholder='e.g.: 63680',
-        initial='63680',
+        initial=concentration_parameter, #'63680'
         error=concentration_number_error,
         
     )
@@ -348,7 +377,7 @@ def add_data(request,event_id=1):
         start_view='decade',
         today_button=True,
         error=start_date_error,
-        initial = '2019-06-04',
+        initial = start_date,
         #attributes={'form': 'retrieve-form'},
     )
     
@@ -360,7 +389,7 @@ def add_data(request,event_id=1):
         start_view='decade',
         today_button=True,
         error=end_date_error,
-        initial = '2019-06-25',
+        initial = end_date,#'2019-06-25',
         #attributes={'form': 'retrieve-form'},
     )
 
@@ -369,7 +398,7 @@ def add_data(request,event_id=1):
     dyslp_input = TextInput(
         display_text='dyslp',
         name='dyslp',
-        initial='0.001',
+        initial=dyslp,
         placeholder='e.g.: 0.001',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -379,7 +408,7 @@ def add_data(request,event_id=1):
     MINDUR_input = TextInput(
         display_text='Minimum Duration',
         name='MINDUR',
-        initial='0',
+        initial=MINDUR,
         placeholder='e.g.: 0',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -389,7 +418,7 @@ def add_data(request,event_id=1):
     SC_input = TextInput(
         display_text='SC',
         name='SC',
-        initial='0.4',
+        initial=SC,
         placeholder='e.g.: 0.4',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -398,7 +427,7 @@ def add_data(request,event_id=1):
     ESLOPE_input = TextInput(
         display_text='ESLOPE',
         name='ESLOPE',
-        initial='0.0001',
+        initial=ESLOPE,
         placeholder='e.g.: 0.0001',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -408,7 +437,7 @@ def add_data(request,event_id=1):
     BSLOPE_input = TextInput(
         display_text='BSLOPE',
         name='BSLOPE',
-        initial='0.001',
+        initial=BSLOPE,
         placeholder='e.g.: 0.001',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -417,7 +446,7 @@ def add_data(request,event_id=1):
     ReRa_input = TextInput(
         display_text='Return Ratio',
         name='ReRa',
-        initial='0.1',
+        initial=ReRa,
         placeholder='e.g.: 0.1',
         disabled=segment_button_disable,
         #error = parameter1_error,
@@ -426,7 +455,7 @@ def add_data(request,event_id=1):
     PKThreshold_input = TextInput(
         display_text='PKThreshold',
         name='PKThreshold',
-        initial='0.03',
+        initial=PKThreshold,
         placeholder='e.g.: 0.03',
         disabled=segment_button_disable,
         error = PKThreshold_error,
@@ -435,7 +464,7 @@ def add_data(request,event_id=1):
     fc_input = TextInput(
         display_text='fc',
         name='fc',
-        initial='0.995',
+        initial=fc,
         placeholder='e.g.: 0.995',
         disabled=segment_button_disable,
         error = fc_error,
@@ -475,7 +504,9 @@ def add_data(request,event_id=1):
         name='visualize-button',
         icon='glyphicon glyphicon-picture',
         href=reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": 0}),
-        disabled=segment_done_button_disable,
+        style='success',
+        disabled=segment_button_disable,
+    
     )
     
     download_button = Button(
@@ -533,8 +564,66 @@ def add_data(request,event_id=1):
     
 @login_required()
 def visualize_events(request,event_id,sub_event):
+    
+    print(request.POST)
+    
+    time,flow,concentration,segments=get_conc_flow_seg(event_id)
+    start_seg = 0
+    end_seg = len(segments)-1
+    
+    if int(sub_event) > int(end_seg):
+        sub_event = str(int(sub_event) - 1 )
+        messages.info(request, 'Event id outside range.')
+     
+    if int(sub_event) < 0:
+        sub_event = str(int(sub_event) + 1 )
+        messages.info(request, 'Event id outside range.')   
+        
+        
+    if request.POST and 'download-button' in request.POST:
+        # Get Values
+        has_errors = False
+        print('download clicked')
 
+        if not has_errors:
+            # Process file here
+            success = download_file(event_id)
+            print('download file returned : '+str(success))
+            # Provide feedback to user
+            if success:
+                
+               
+                filename = success
+                fname = 'HEDA_download'
+                content = FileWrapper(open(filename))
+                response = HttpResponse(content, content_type='text/csv')
+               
+                
+                response['Content-Disposition'] = 'attachment; filename=%s' % fname
+                return response
+                
+                
+            else:
+                messages.info(request, 'Unable to download data file.')
+            
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
 
+        messages.error(request, "Unknown problem.")
+        
+    
+    
+    download_button = Button(
+        display_text='Download',
+        name='download-button',
+        submit=True,
+        icon='glyphicon glyphicon-download',
+        style='success',
+        attributes={'form': 'slider-data-form'},
+        
+        
+    )
+    
+    
     
     
     cancel_button = Button(
@@ -551,14 +640,7 @@ def visualize_events(request,event_id,sub_event):
         style='success',
     )
         
-        
-    download_button = Button(
-        display_text='Download',
-        name='download-button',
-        #disabled = download_button_disable,
-        submit=True
-        
-    )
+    
     
     next_button = Button(
     display_text='Next',
@@ -567,12 +649,7 @@ def visualize_events(request,event_id,sub_event):
         href=reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": str(int(sub_event)+1)}),
         style='success',
     )
-    #hydrograph_plot = create_hydrograph(1)
     
-    
-    #cqt_plot = cqt_event_plot(int(event_id),int(sub_event))
-    #cq_plot = cq_event_plot(int(event_id),int(sub_event))
-    #candq_plot = candq_event_plot(int(event_id),int(sub_event))
     cqt_cq_plot = cqt_cq_event_plot(int(event_id),int(sub_event))
     
     table_rows = []
@@ -583,16 +660,41 @@ def visualize_events(request,event_id,sub_event):
     
     
     
-    if request.POST and 'previous-button' in request.POST:
+    
+    
+    if request.POST and 'event-number' in request.POST:
+        sub_event = request.POST.get('event-number', None)
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
-        
-        
+            
     metric_table = DataTableView(
         column_names=('Name', 'Value'),
         rows=table_rows,
         searching=False,
         orderClasses=False,
         lengthMenu=[ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+    )
+    
+    
+    
+    event_number_slider = RangeSlider(display_text='',
+                      name='event-number',
+                      min=start_seg,
+                      max=end_seg,
+                      initial=sub_event,
+                      step=1,
+                      attributes={'form': 'slider-data-form'},
+                      )
+                      
+                      
+    jump_button = Button(
+        display_text='Jump using slider',
+        name='jump-button',
+        icon='',
+        style='success',
+        attributes={'form': 'slider-data-form'},
+        #href=reverse('heda:add_data', kwargs={"event_id": event_id}),
+        #disabled=segment_button_disable,
+        submit=True
     )
 
     
@@ -604,8 +706,10 @@ def visualize_events(request,event_id,sub_event):
         'previous_button': previous_button,
         'download_button':download_button,
         'next_button':next_button,
-        'metric_table':metric_table
-        
+        'metric_table':metric_table,
+        'event_number_slider':event_number_slider,
+        'sub_event': sub_event,
+        'jump_button':jump_button,
 
     }
     

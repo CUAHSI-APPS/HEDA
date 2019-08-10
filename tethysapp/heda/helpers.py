@@ -73,6 +73,36 @@ def create_hydrograph(event_id, height='520px', width='100%'):
         'yaxis': {'title': 'Flow (cfs)'},
         'showlegend': False,
         'xaxis_range':[time[0],time[-1]],
+        
+        'xaxis':go.layout.XAxis(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                        label="1m",
+                        step="month",
+                        stepmode="backward"),
+                    dict(count=6,
+                        label="6m",
+                        step="month",
+                        stepmode="backward"),
+                    dict(count=1,
+                        label="YTD",
+                        step="year",
+                        stepmode="todate"),
+                    dict(count=1,
+                        label="1y",
+                        step="year",
+                        stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True
+            ),
+            type="date"
+        )
+        
+        
     }
     figure = {'data': data, 'layout': layout}
     
@@ -481,6 +511,7 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
     fig.update_yaxes(title_text="Concentration", row=1, col=2,secondary_y = True)
     
     
+
     
     
     hydrograph_plot = PlotlyView(fig, height='520px', width='100%')

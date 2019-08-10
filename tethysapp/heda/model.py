@@ -65,13 +65,14 @@ def add_new_data(sites, start,end,concentration):
         parameters['siteStatus']='all'
         
         
-        print(parameters)
+        
         
         Host =  'https://waterservices.usgs.gov/nwis/iv/'
         
         response = fetch_data(Host,parameters)
         
-        
+        if not response:
+            return False
         
         if response.status_code != 200:
             return False
@@ -318,6 +319,8 @@ class Segments(Base):
     trajectory_id = Column(ForeignKey('trajectories.id'))
     start = Column(Integer)  
     end = Column(Integer) 
+    
+    #statistics for segment
     
     
 
@@ -759,7 +762,7 @@ def upload_trajectory(hydrograph_file):
             
             
             sline = line.decode().split(',')
-            print(sline)
+        
             try:
                 index = int(sline[0])
                 time = sline[1]
@@ -795,7 +798,7 @@ def upload_trajectory(hydrograph_file):
             #segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
             segment_index = np.asarray(segment_index)
             segments = []
-            print(segments_all)
+            
             for segment in segments_all:
                 if segment != 0:
                     ii = np.where(segment_index == segment)[0]
@@ -803,7 +806,7 @@ def upload_trajectory(hydrograph_file):
         
         
         
-            print(len(segments))
+            
             new_event.trajectory.segments = segments
             #trajectory.segments = segments
             # Get connection/session to database

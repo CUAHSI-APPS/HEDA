@@ -38,16 +38,14 @@ def fetch_data(host,parameters):
     try:
         print('retrieving data')
         r = requests.get(url = URL, params = parameters) 
-        print(r)
+        return r
     except requests.exceptions.RequestException as e:
         print(e)
         print('Except of request entered')
-        
+        return False
   
 
-    #print(r.url)
-    #print(r)
-    return r
+
     
     
     '''
