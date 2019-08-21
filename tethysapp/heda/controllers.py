@@ -8,9 +8,9 @@ from django.shortcuts import reverse
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation,upload_trajectory,calculate_metrics,download_file,get_conc_flow_seg
+from .model import add_new_data,segmentation,upload_trajectory,download_file,get_conc_flow_seg,retrieve_metrics
 from .helpers import create_hydrograph,cqt_cq_event_plot
-
+import csv
 from tethys_sdk.permissions import has_permission
 
 from django.views.static import serve
@@ -20,6 +20,18 @@ from django.views.static import serve
 from django.http import HttpResponse
 from wsgiref.util import FileWrapper
 
+
+from django.http import StreamingHttpResponse
+
+class Echo:
+    """An object that implements just the write method of the file-like
+    interface.
+    """
+    def write(self, value):
+        """Write the value by returning it, instead of storing in a buffer."""
+        return value
+        
+        
 
 @login_required()
 def home(request):
@@ -469,13 +481,17 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         disabled=segment_button_disable,
         error = fc_error,
     )
+    
+    def loading():
+        messages.success(request, 'loading.')
+        return 0
 
     retrieve_button = Button(
         display_text='Retrieve',
         name='retrieve-button',
         icon='glyphicon glyphicon-plus',
         style='success',
-        attributes={'form': 'add-data-form'},
+        attributes={'form': 'add-data-form','onclick':"loading()"},
         submit=True
     )
     
@@ -565,8 +581,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
 @login_required()
 def visualize_events(request,event_id,sub_event):
     
-    print(request.POST)
-    
+    metrics = retrieve_metrics(event_id,sub_event)
     time,flow,concentration,segments=get_conc_flow_seg(event_id)
     start_seg = 0
     end_seg = len(segments)-1
@@ -583,26 +598,38 @@ def visualize_events(request,event_id,sub_event):
     if request.POST and 'download-button' in request.POST:
         # Get Values
         has_errors = False
-        print('download clicked')
+        
 
         if not has_errors:
-            # Process file here
-            success = download_file(event_id)
-            print('download file returned : '+str(success))
+            # create and write file here
+            print('no errors')
+            
+            success = 1
             # Provide feedback to user
             if success:
                 
                
-                filename = success
+                
+                
+                fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file_metrics_temp.csv'
+                fout = open(fname, 'w')
+                fieldnames = metrics[0].keys()
+                csvw = csv.DictWriter(fout, fieldnames = fieldnames)
+                csvw.writeheader()
+                csvw.writerows(metrics)
+                fout.close()
+            
+            
+                filename = fname    
                 fname = 'HEDA_download'
                 content = FileWrapper(open(filename))
                 response = HttpResponse(content, content_type='text/csv')
-               
-                
                 response['Content-Disposition'] = 'attachment; filename=%s' % fname
+                
+                
                 return response
                 
-                
+                   
             else:
                 messages.info(request, 'Unable to download data file.')
             
@@ -613,7 +640,7 @@ def visualize_events(request,event_id,sub_event):
     
     
     download_button = Button(
-        display_text='Download',
+        display_text='Download metrics',
         name='download-button',
         submit=True,
         icon='glyphicon glyphicon-download',
@@ -653,7 +680,10 @@ def visualize_events(request,event_id,sub_event):
     cqt_cq_plot = cqt_cq_event_plot(int(event_id),int(sub_event))
     
     table_rows = []
-    metrics_dict = calculate_metrics(event_id,sub_event)
+    #metrics_dict = calculate_metrics(event_id,sub_event)
+    print(sub_event)
+    print('metrics length is '+str(len(metrics)))
+    metrics_dict = metrics[int(sub_event)]
     
     for k in metrics_dict.keys():
         table_rows.append((k,metrics_dict[k]))

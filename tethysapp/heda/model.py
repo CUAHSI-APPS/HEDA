@@ -23,6 +23,7 @@ import numpy as np
 import csv
 import copy 
 
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
@@ -319,6 +320,18 @@ class Segments(Base):
     trajectory_id = Column(ForeignKey('trajectories.id'))
     start = Column(Integer)  
     end = Column(Integer) 
+    startTime = Column(String)
+    endTime = Column(String)
+    duration = Column(String)
+    PeakQ = Column(Float)
+    baseflow = Column(Float)
+    timetoPeakQ = Column(String)
+    FI = Column(Float)
+    QRecess  = Column(Float)
+    SSCRecess = Column(Float)
+    PeakConc = Column(Float)
+    TimetoPeakConc= Column(String)
+    DiffPeakQPeakC = Column(String)
     
     #statistics for segment
     
@@ -371,7 +384,24 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         segments = []
         for i in range(0,nRunoffEvent):
             event_indexes = runoffEvents[i][:,0]
-            segments.append(Segments(start = event_indexes[0],end = event_indexes[-1]))
+
+            event_flow = flow[int(event_indexes[0]):int(event_indexes[-1])]
+            event_concentration = concentration[int(event_indexes[0]):int(event_indexes[-1])]
+            event_time = time[int(event_indexes[0]):int(event_indexes[-1])]
+            start_index = event_indexes[0]
+            end_index = event_indexes[-1]
+    
+    
+            seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
+            
+            
+            segments.append(seg)
+            
+        
+        
+        
+        
+        
         
         
         event.trajectory.segments = segments
@@ -395,7 +425,39 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         print('in exception')
         return False
         
-        
+def create_segment(event_flow,event_concentration,event_time,start_index,end_index):
+    
+    
+    duration = event_time[-1] - event_time[0]
+    startTime = str(event_time[0])
+    endTime = str(event_time[-1])
+    PeakQ = max(event_flow)
+    baseflow = event_flow[0]
+    timetoPeakQ = event_time[np.argmax(event_flow)] - event_time[0]
+    #FI = 
+    QRecess=  event_flow[-1] - event_flow[0]
+    #SSCRecess
+    PeakConc = max(event_concentration)
+    TimetoPeakConc = event_time[np.argmax(event_concentration)] - event_time[0]
+    
+    
+
+    DiffPeakQPeakC = TimetoPeakConc - timetoPeakQ
+    days_to_hours = DiffPeakQPeakC.days * 24
+    diff_btw_two_times = (DiffPeakQPeakC.seconds) / 3600
+    overall_hours = days_to_hours + diff_btw_two_times
+    
+    DiffPeakQPeakC = str(overall_hours)
+    
+    duration = str(duration)
+    timetoPeakQ = str(timetoPeakQ)
+    TimetoPeakConc = str(TimetoPeakConc)
+    DiffPeakQPeakC = str(DiffPeakQPeakC)
+    
+    seg = Segments(start = start_index,end = end_index,duration = duration,PeakQ=PeakQ,baseflow = baseflow,timetoPeakQ=timetoPeakQ,QRecess = QRecess,PeakConc=PeakConc,TimetoPeakConc = TimetoPeakConc,DiffPeakQPeakC = DiffPeakQPeakC,startTime = startTime, endTime = endTime)
+    
+    return seg
+            
 
     
 def separatebaseflow(hy,fc,Pass =4): 
@@ -688,7 +750,9 @@ def extractrunoff(stormflow, MINDIFF, RETURNRATIO, BSLOPE, ESLOPE, SC, MINDUR = 
     return runoffEvents, nEvent
     
     
-def calculate_metrics(event_id,sub_event):
+
+    
+def retrieve_metrics(event_id,sub_event):
     """
     Get data.
     """
@@ -707,46 +771,37 @@ def calculate_metrics(event_id,sub_event):
         concentration.append(point.concentration)
         time.append(point.time)
     
-    segments = []
+    
+    metrics = []
+    
     for segment in trajectory.segments:
-        d={}
-        d['start'] = segment.start
-        d['end'] = segment.end
+        metrics_dict={}
+        metrics_dict['startTime'] = segment.startTime
+        metrics_dict['endTime'] = segment.endTime  
+        metrics_dict['duration'] = segment.duration
+        metrics_dict['PeakQ'] = segment.PeakQ
+        metrics_dict['baseflow'] = segment.baseflow
+        metrics_dict['Time to peak discharge'] = segment.timetoPeakQ
+        metrics_dict['Q recess'] = segment.QRecess
+        metrics_dict['Peak concentration'] = segment.PeakConc
+        metrics_dict['Time to peak concentration'] = segment.TimetoPeakConc
+        metrics_dict['Difference between peak Q and peak C (hrs)'] = segment.DiffPeakQPeakC
+    
+    
 
-        segments.append(d)
+        
+        
+        
+        metrics.append(metrics_dict)
     
     
     
     session.close()
     
-    #seperate sub event
-    
-    event_flow = flow[segments[sub_event]['start']:segments[sub_event]['end']]
-    event_concentration = concentration[segments[sub_event]['start']:segments[sub_event]['end']]
-    event_time = time[segments[sub_event]['start']:segments[sub_event]['end']]
-    
-    metrics_dict = {}
-    
-    metrics_dict['Time of start'] = event_time[0]
-    metrics_dict['Time of end'] = event_time[-1]
-    metrics_dict['Duration'] = event_time[-1] - event_time[0]
-    
-    metrics_dict['Peak discharge'] = max(event_flow)
-    metrics_dict['Initial baseflow'] = max(event_flow)
-    
-    metrics_dict['Time to peak discharge'] = event_time[np.argmax(event_flow)] - event_time[0]
-    #metrics_dict['Flood intensity '] = (max(event_flow) - max(event_flow))/ (event_time[np.argmax(event_flow)] - event_time[0])
-    metrics_dict['Q recess'] = event_flow[-1] - event_flow[0]
     
     
-    metrics_dict['Peak concentration'] = max(event_concentration)
-    metrics_dict['Time to peak concentration'] = event_time[np.argmax(event_concentration)] - event_time[0]
-    metrics_dict['Difference between peak Q and peak C'] = metrics_dict['Time to peak concentration'] - metrics_dict['Time to peak discharge'] 
-    #metrics_dict['HI']
-    #metrics_dict['HI']
     
-    
-    return metrics_dict
+    return  metrics 
 
 def upload_trajectory(hydrograph_file):
     """
@@ -756,6 +811,9 @@ def upload_trajectory(hydrograph_file):
     trajectory_points = []
     segments_all = set()
     segment_index = []
+    flow_all = []
+    concentration_all = []
+    time_all = []
     try:
         
         for line in hydrograph_file:
@@ -772,6 +830,9 @@ def upload_trajectory(hydrograph_file):
                 segment_index.append(segment)
                 segments_all.add(segment)
                 time = datetime.strptime(time,"%Y-%m-%d %H:%M:%S")
+                flow_all.append(flow)
+                time_all.append(time)
+                concentration_all.append(concentration)
                 trajectory_points.append(TrajectoryPoint(index = index, time=time, flow=flow,concentration=concentration))
             except ValueError:
                 continue
@@ -802,9 +863,18 @@ def upload_trajectory(hydrograph_file):
             for segment in segments_all:
                 if segment != 0:
                     ii = np.where(segment_index == segment)[0]
-                    segments.append(Segments(start = int(ii[0]),end = int(ii[-1])))
+                    #segments.append(Segments(start = int(ii[0]),end = int(ii[-1])))
         
-        
+                    start_index = int(ii[0])
+                    end_index = int(ii[-1])
+                    
+                    
+                    event_flow = flow_all[start_index:end_index]
+                    event_concentration = concentration_all[start_index:end_index]
+                    event_time = time_all[start_index:end_index]
+    
+                    seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
+                    segments.append(seg)
         
             
             new_event.trajectory.segments = segments
@@ -867,7 +937,7 @@ def download_file(event_id):
         
         #create a file and return path, and download file
         #fname = str(event_id)+'_file.csv'
-        fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file.csv'
+        fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file_temp.csv'
         fout = open(fname, 'w')
         csvw = csv.DictWriter(fout, fieldnames = ['index','time','flow','concentration','segment'])
         csvw.writeheader()
