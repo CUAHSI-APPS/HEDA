@@ -23,7 +23,9 @@ import numpy as np
 import csv
 import copy 
 
-from sqlalchemy.sql import func
+
+
+import os
 
 Base = declarative_base()
 
@@ -131,6 +133,11 @@ def add_new_data(sites, start,end,concentration):
             session.add(new_event)
             session.flush()
             event_id = new_event.id
+            
+            if event_id > 40:
+                #delete one event for every event added after 40
+                session.delete(session.query(Event).get(int(event_id-30)))
+                
             # Commit the session and close the connection
             session.commit()
             session.close()
@@ -887,7 +894,11 @@ def upload_trajectory(hydrograph_file):
             session.add(new_event)
             session.flush()
             event_id = new_event.id
-            print('event uploaded as event id: '+str(event_id))
+            
+            if event_id > 40:
+                #delete one event for every event added after 40
+                session.delete(session.query(Event).get(int(event_id-30)))
+                
             # Commit the session and close the connection
             session.commit()
             session.close()
@@ -944,7 +955,15 @@ def download_file(event_id):
         csvw.writerows(rows)
         fout.close()
         
-    
+        #clean up old files
+        if event_id > 40:
+            fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id-30)+'_file_temp.csv'
+            if os.path.exists(fname2):
+                os.remove(fname2)
+         
+            
+        #print(os.getcwd())
+
         return fname
     except Exception as e:
         # Careful not to hide error. At the very least log it to the console

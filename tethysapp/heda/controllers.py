@@ -14,7 +14,7 @@ import csv
 from tethys_sdk.permissions import has_permission
 
 from django.views.static import serve
-
+import os
 
 
 from django.http import HttpResponse
@@ -139,6 +139,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     #end_date =''
     if segment_button_disable =='False':
         segment_button_disable = False
+        
     else:
         segment_button_disable = True
     
@@ -618,6 +619,14 @@ def visualize_events(request,event_id,sub_event):
                 csvw.writeheader()
                 csvw.writerows(metrics)
                 fout.close()
+                
+                
+                #remove old files
+                if event_id > 40:
+                    fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id-30)+'_file_metrics_temp.csv'
+                    if os.path.exists(fname2):
+                        os.remove(fname2)
+        
             
             
                 filename = fname    
@@ -683,11 +692,13 @@ def visualize_events(request,event_id,sub_event):
     #metrics_dict = calculate_metrics(event_id,sub_event)
     print(sub_event)
     print('metrics length is '+str(len(metrics)))
-    metrics_dict = metrics[int(sub_event)]
-    
-    for k in metrics_dict.keys():
-        table_rows.append((k,metrics_dict[k]))
-    
+    metrics_dict = {}
+    if len(metrics)>0:
+        metrics_dict = metrics[int(sub_event)]
+        
+        for k in metrics_dict.keys():
+            table_rows.append((k,metrics_dict[k]))
+        
     
     
     
