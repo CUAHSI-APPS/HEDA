@@ -622,8 +622,8 @@ def visualize_events(request,event_id,sub_event):
                 
                 
                 #remove old files
-                if event_id > 40:
-                    fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id-30)+'_file_metrics_temp.csv'
+                if int(event_id) > 40:
+                    fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(int(event_id)-30)+'_file_metrics_temp.csv'
                     if os.path.exists(fname2):
                         os.remove(fname2)
         

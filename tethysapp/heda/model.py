@@ -956,9 +956,12 @@ def download_file(event_id):
         fout.close()
         
         #clean up old files
-        if event_id > 40:
-            fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id-30)+'_file_temp.csv'
+       
+        if int(event_id) > 40:
+            
+            fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(int(event_id)-30)+'_file_temp.csv'
             if os.path.exists(fname2):
+                print('removing')
                 os.remove(fname2)
          
             
