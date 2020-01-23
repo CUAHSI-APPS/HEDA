@@ -8,7 +8,7 @@ from django.shortcuts import reverse
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from .model import add_new_data,segmentation,upload_trajectory,download_file,get_conc_flow_seg,retrieve_metrics
+from .model import add_new_data,segmentation,upload_trajectory,download_file,get_conc_flow_seg,retrieve_metrics,update_segmentation
 from .helpers import create_hydrograph,cqt_cq_event_plot
 import csv
 from tethys_sdk.permissions import has_permission
@@ -126,7 +126,7 @@ def home(request):
 
 
 @login_required()
-def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'USGS' ):
+def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI' ):
     """
     Controller for the Add Data page.
     
@@ -376,7 +376,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                            multiple=False,
                            original=True,
                            options=[('USGS', 'USGS'), ('CUAHSI', 'CUAHSI')],
-                           initial=['CUAHSI'])
+                           initial=['USGS'])
     
     
     
@@ -605,8 +605,28 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     
 @login_required()
 def visualize_events(request,event_id,sub_event):
+    event_id = int(event_id)
+    sub_event = int(sub_event)
+    metrics = retrieve_metrics(int(event_id),int(sub_event))
+    #update metrics 
     
-    metrics = retrieve_metrics(event_id,sub_event)
+    #check if metrics already calculated. If duration is negative then calculate
+    
+    if metrics[0]['duration'] == '-1':
+        try: 
+            
+            success = update_segmentation(int(event_id))
+            metrics = retrieve_metrics(int(event_id),int(sub_event))
+        except Exception as e:
+            # Careful not to hide error. At the very least log it to the console
+            print(e)
+            
+            return False
+        
+     
+    
+    
+    
     time,flow,concentration,segments=get_conc_flow_seg(event_id)
     start_seg = 0
     end_seg = len(segments)-1

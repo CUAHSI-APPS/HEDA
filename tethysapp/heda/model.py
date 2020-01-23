@@ -124,7 +124,7 @@ def add_new_data_cuahsi(site_code, start, end, concentration_param,network):
     site_code = 'NWISUV:01362500'
     variable_code = '63680'
     st = datetime(2019, 6, 4)
-    et = datetime(2019,6,26)
+    et = datetime(2019,6,10)
     concentration_return = client.service.GetValuesObject(site_code, variable_code, st, et, '')
     concentration_obj = TimeSeries(concentration_return)
     
@@ -566,8 +566,27 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
             end_index = event_indexes[-1]
     
             
-            seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
+            #seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
+            print(start_index)
             
+            
+            seg = Segments(start = start_index,
+            end = end_index, 
+            duration = '-1' ,
+            PeakQ=0,
+            baseflow = 0,
+            timetoPeakQ='n/a',
+            QRecess = 0,
+            PeakConc=0,
+            TimetoPeakConc = 'n/a',
+            DiffPeakQPeakC = 'n/a',
+            startTime = str(event_time[0]), 
+            endTime = str(event_time[-1]),
+            HI = -999)
+    
+    
+
+    
             
             segments.append(seg)
         
@@ -599,9 +618,72 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         print('in exception')
         return False
         
+        
+
+def update_segmentation(event_id): 
+    event_id = int(event_id)
+    try:
+        # Assign points to hydrograph
+        
+        Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
+        session = Session()
+        event = session.query(Event).get(int(event_id))
+        
+        
+        
+        
+        
+        event_time,flow,concentration,segments=get_conc_flow_seg(event_id)
+        
+        
+        segmentation_updated = []
+        for i in range(0,len(segments)):
+            print('this many segments' +str(len(segments)))
+            #metrics = retrieve_metrics(event_id,i)
+            start_index = segments[i]['start']
+            end_index = segments[i]['end']
+            print(start_index)
+            print(end_index)
+            
+            seg = create_segment(flow[start_index:end_index],concentration[start_index:end_index],event_time[start_index:end_index],start_index,end_index)
+            
+            segmentation_updated.append(seg)
+            
+            
+        segments_dummy = []
+        
+        event.trajectory.segments = copy.deepcopy(segments_dummy)
+        
+        # Remove old points if any
+        
+        for segment in event.trajectory.segments:
+            session.delete(segment)
+            
+        
+        event.trajectory.segments = segmentation_updated
+
+        # Persist to database
+        session.commit()
+        session.close()
+        
+        return True
+    
+    
+    except Exception as e:
+        # Careful not to hide error. At the very least log it to the console
+        print(e)
+        print('in exception')
+        return False 
+          
+
+
+        
+    
 def create_segment(event_flow,event_concentration,event_time,start_index,end_index):
     
-    
+    print(len(event_time))
+    print(len(event_flow))
+    print(len(event_concentration))
     duration = event_time[-1] - event_time[0]
     startTime = str(event_time[0])
     endTime = str(event_time[-1])
@@ -652,6 +734,7 @@ def create_segment(event_flow,event_concentration,event_time,start_index,end_ind
     timespacing = event_time[1]-event_time[0]
     timespacing = timespacing.total_seconds()
     timespacing = int(timespacing/60)
+    
     
     try:
         hystdict = hysteresisMetrics(discharge_df,response_df, timespacing, timespacing, debug=False, interpall=True,
@@ -997,8 +1080,9 @@ def retrieve_metrics(event_id,sub_event):
         metrics_dict['Peak concentration'] = segment.PeakConc
         metrics_dict['Time to peak concentration'] = segment.TimetoPeakConc
         metrics_dict['Difference between peak Q and peak C (hrs)'] = segment.DiffPeakQPeakC
-        metrics_dict['Hysteresis Index'] = segment.HI
-    
+        metrics_dict['Hysteresis Index'] = round(segment.HI,3)
+        metrics_dict['start index'] = segment.start
+        metrics_dict['end index'] = segment.end
     
 
         
