@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
 from tethys_sdk.permissions import login_required
-from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView,RangeSlider
+from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView,RangeSlider, SelectInput
 
 from django.shortcuts import reverse
 
@@ -126,7 +126,7 @@ def home(request):
 
 
 @login_required()
-def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True ):
+def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'USGS' ):
     """
     Controller for the Add Data page.
     
@@ -165,6 +165,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     concentration_number_error = ''
     hydrograph_file = None
     hydrograph_plot = create_hydrograph(event_id)
+    
 
     #segmentation parameters
     #fc = ''
@@ -209,6 +210,8 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
             
             #return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+            
             return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
                     
 
@@ -257,7 +260,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 segment_button_disable = False
                 download_button_disable = False
                 
-                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+            
+                #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
                 
                 #hydrograph_plot = create_hydrograph(event_id)
                 
@@ -275,6 +280,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         start_date = request.POST.get('start-date', None)
         end_date = request.POST.get('end-date', None)
         concentration_parameter = request.POST.get('concentration-parameter',None)
+        select_input = request.POST.get('select-input',None)
        
         # Validate
         if not site_number:
@@ -298,7 +304,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         
             #segmentation parameters
             
-            event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter)
+            event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter,source = select_input, network ='dummy' )
             
             #hydrograph_plot =create_hydrograph(event_id)
             
@@ -314,7 +320,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 
                 #return redirect(reverse('heda:add_data', kwargs={"event_id": '92',"site_number":'test',"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter}))
                 
-                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
                 
             
             
@@ -326,8 +332,10 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     if request.POST and 'download-button' in request.POST:
         # Get Values
         has_errors = False
+        select_input = request.POST.get('select-input',None)
         print('download clicked')
-
+        
+        
         if not has_errors:
             # Process file here
             success = download_file(event_id)
@@ -349,7 +357,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
             else:
                 messages.info(request, 'Unable to download data file.')
             
-            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp}))
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+                
+            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"select_input":select_input}))
                 
             #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
 
@@ -360,6 +370,19 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         
 
     # Define form gizmos
+    
+    select_input = SelectInput(display_text='Source',
+                           name='select-input',
+                           multiple=False,
+                           original=True,
+                           options=[('USGS', 'USGS'), ('CUAHSI', 'CUAHSI')],
+                           initial=['CUAHSI'])
+    
+    
+    
+
+    
+    
     site_number_input = TextInput(
         display_text='Site Number',
         name='site-number',
@@ -570,6 +593,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         'upload_button': upload_button,
         'hydrograph_file_error': hydrograph_file_error,
         'concentration_parameter_input':concentration_parameter_input,
+        'select_input': select_input,
         
         
 
@@ -611,8 +635,8 @@ def visualize_events(request,event_id,sub_event):
                 
                
                 
-                
-                fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file_metrics_temp.csv'
+                fileDir = os.path.dirname(__file__)
+                fname = fileDir+'/public/files/'+str(event_id)+'_file_metrics_temp.csv'
                 fout = open(fname, 'w')
                 fieldnames = metrics[0].keys()
                 csvw = csv.DictWriter(fout, fieldnames = fieldnames)

@@ -23,9 +23,23 @@ import numpy as np
 import csv
 import copy 
 
+import pandas as pd
+from .hysteresis_metrics import hysteresisMetrics
 
 
 import os
+
+
+# Import standard libs
+from datetime import datetime
+from suds.client import Client
+import matplotlib.pyplot as plt
+from .nbutils import install_and_import, TimeSeries
+from pandas import Grouper
+import pandas
+
+
+
 
 Base = declarative_base()
 
@@ -34,117 +48,269 @@ Base = declarative_base()
 def dummy():
     return True
 
-def add_new_data(sites, start,end,concentration):
+class TimeSeries(object):
+    """
+    A class for holding HIS timeseries data 
+    """
+    def __init__(self, get_values_object):
+        """
+        get_values_obeject -> WOF SOAP object 
+        """
+        self.get_values_object = get_values_object
+        
+        self.parse()
+        
+    def parse(self):
+        # series info
+        qo = self.get_values_object.queryInfo
+        self.site_code = qo.criteria.locationParam
+        self.variable_code = qo.criteria.variableParam
+        self.start = datetime.strptime(qo.criteria.timeParam.beginDateTime.split('.')[0], '%Y-%m-%d %H:%M:%S')
+        self.end = datetime.strptime(qo.criteria.timeParam.endDateTime.split('.')[0], '%Y-%m-%d %H:%M:%S')
+        
+        # source info
+        si = self.get_values_object.timeSeries[0].sourceInfo
+        self.site_name = si.siteName
+        #self.latitude = si.geoLocation.geogLocation.latitude
+        #self.longitude = si.geoLocation.geogLocation.longitude
+        #self.elevation = si.elevation_m
+        #self.elev_datum = si.verticalDatum
+        
+        # variable 
+        v = self.get_values_object.timeSeries[0].variable
+        self.variable_name = v.variableName
+        self.variable_datatype = v.dataType
+        
+        # values
+        self.data = []
+        for val in self.get_values_object.timeSeries[0].values[0].value:
+            value_dt  = val._dateTime
+            vC = float(val.value)
+            self.data.append(dict(date=value_dt,
+                                  val=vC
+                                  ))
+            
+    def asDataFrame(self):
+        atts = {k:v for k,v in self.__dict__.items() if k not in ('get_values_object', 'data')}
+        #atts.pop('get_values_object')
+        #data = atts.pop('data')
+
+        dat = []
+        for val in self.data:
+            content = {k:v for k,v in atts.items()}
+            for k, v in val.items():
+                content[k] = v
+            dat.append(content)
+
+        df = pandas.DataFrame(dat)
+        df = df.set_index(df.date)
+        return df
+                        
+
+def add_new_data_cuahsi(site_code, start, end, concentration_param,network):
+    
+    
+    # define the web service info
+    
+    network='NWISUV'
+    wsdl = 'http://hydroportal.cuahsi.org/'+network.lower()+'/cuahsi_1_1.asmx?WSDL'
+    #wsdl = f'http://hydroportal.cuahsi.org/{network.lower()}/cuahsi_1_1.asmx?WSDL'
+    print(wsdl)
+    
+    discharge_pram = '00060'
+    
+    # collect TMAX for Everett
+    client = Client(wsdl)
+    site_code = 'NWISUV:01362500'
+    variable_code = '63680'
+    st = datetime(2019, 6, 4)
+    et = datetime(2019,6,26)
+    concentration_return = client.service.GetValuesObject(site_code, variable_code, st, et, '')
+    concentration_obj = TimeSeries(concentration_return)
+    
+    flow_return = client.service.GetValuesObject(site_code, discharge_pram, st, et, '')
+    flow_obj = TimeSeries(flow_return)
+    
+    
+    flow = []
+    concentration = []
+    
+    
+    conc_dates = []
+    flow_dates = []
+    
+    
+    for d_point in concentration_obj.data:
+        concentration.append(d_point['val'])
+        conc_dates.append(d_point['date'])
+        
+        
+    for d_point in flow_obj.data:
+        flow.append(d_point['val'])
+        flow_dates.append(d_point['date'])
+    
+    #print error of missing values
+    if len(flow) != len(concentration):
+        print('Flow values returned : '+str(len(flow)))
+        print('Concentration values returned : '+str(len(concentration)))
+        print('Error: Number of flow and concentration values returned not equal.')
+        
+    
+    
+    flow_final =[]
+    concentration_final = []
+    date_time_final = []
+    
+    flow_counter = 0
+    concentration_counter = 0
+    while flow_counter<len(flow_dates) and concentration_counter<len(conc_dates):
+        if conc_dates[concentration_counter] == flow_dates[flow_counter]:
+            flow_final.append(flow[flow_counter])
+            concentration_final.append(concentration[concentration_counter])
+            date_time_final.append(flow_dates[flow_counter])
+            
+            #date_time_final.append(datetime.strptime(flow_dates[flow_counter][0:-10],"%Y-%m-%d %H:%M:%S"))
+            concentration_counter = concentration_counter + 1
+            flow_counter = flow_counter + 1
+            
+        
+        #missing flow value
+        elif conc_dates[concentration_counter] < flow_dates[flow_counter]:
+            concentration_counter = concentration_counter + 1
+            
+        #missing concentration value
+        elif flow_dates[flow_counter] < conc_dates[concentration_counter]:
+            concentration_counter = concentration_counter + 1
+            
+         
+                
+    return flow_final,concentration_final,date_time_final                
+        
+
+def add_new_data(sites, start,end,concentration,source,network):
     """
     Persist new dam.
     """
     # Serialize data to json
     try:
-        #'01646500'
-        #'USGS:06306300'
-        #print('site number provided is '+sites)
-        #parameters = {}
-        #parameters['format']= 'json'
-        #parameters['sites']= 'USGS:06306300'
-        #parameters['startDT'] = '2019-06-03'
-        #parameters['endDT'] = '2019-06-9'
-        
-        parameters = {}
-        parameters['format']= 'json'
-        parameters['sites']= sites
-        
-        parameters['startDT'] = start
-        parameters['endDT'] = end
         
         
-        
-        parameter_retrieve = '00060,'+str(concentration)
-        #discharge 00060
-        #tributry 63680
-        #parameters['parameterCd']='00060,63680'
-        print(parameter_retrieve)
-        parameters['parameterCd'] = parameter_retrieve
-        
-        parameters['siteStatus']='all'
-        
-        
-        
-        
-        Host =  'https://waterservices.usgs.gov/nwis/iv/'
-        
-        response = fetch_data(Host,parameters)
-        
-        if not response:
-            return False
-        
-        if response.status_code != 200:
-            return False
+        if source == 'CUAHSI':
             
+            discharge, SSC, time = add_new_data_cuahsi(sites, start, end, concentration,network)
+        
+        
         else:
-            
-            y = json.loads(response.text)
-            
-    
         
-    
-            discharge_json = y['value']['timeSeries'][0]['values']
-            SSC_json = y['value']['timeSeries'][1]['values']
-        
-        
-            discharge = extract_values(discharge_json, 'value')
-            SSC = extract_values(SSC_json, 'value')
-            time = extract_values(SSC_json, 'dateTime')
-            for i in range(0,len(time)):
-                time[i] = time[i].replace('T',' ')
-                datetime_object = datetime.strptime(time[i][0:-10],"%Y-%m-%d %H:%M:%S")
-                time[i] = datetime_object
+            #'01646500'
+            #'USGS:06306300'
+            #print('site number provided is '+sites)
+            #parameters = {}
+            #parameters['format']= 'json'
+            #parameters['sites']= 'USGS:06306300'
+            #parameters['startDT'] = '2019-06-03'
+            #parameters['endDT'] = '2019-06-9'
             
-            trajectory_points = []
-            for i in range(0,len(discharge)):
-                try:
-                    date_time = time[i]
-                    flow = discharge[i]
-                    concentration = SSC[i]
+            parameters = {}
+            parameters['format']= 'json'
+            parameters['sites']= sites
+            
+            parameters['startDT'] = start
+            parameters['endDT'] = end
+            
+            
+            
+            parameter_retrieve = '00060,'+str(concentration)
+            #discharge 00060
+            #tributry 63680
+            #parameters['parameterCd']='00060,63680'
+            print(parameter_retrieve)
+            parameters['parameterCd'] = parameter_retrieve
+            
+            parameters['siteStatus']='all'
+            
+            
+            
+            
+            Host =  'https://waterservices.usgs.gov/nwis/iv/'
+            
+            response = fetch_data(Host,parameters)
+            
+            if not response:
+                return False
+            
+            if response.status_code != 200:
+                return False
                 
-                    trajectory_points.append(TrajectoryPoint(index = i, time=date_time, flow=flow,concentration=concentration))
-                    
-                except ValueError:
-                    continue
-            
-            #Create new event record
-            #new_data_id = uuid.uuid4()
-            new_event = Event(
-                #id = str(new_data_id),
-                siteNumber=sites,
-                siteName = 'n/a',
-                startDate = start,
-                endDate = end
-            
-            )
-            trajectory = Trajectory()
-            new_event.trajectory = trajectory
-            trajectory.points = trajectory_points
-            
-            # Get connection/session to database
-            Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
-            session = Session()
-    
-            # Add the new dam record to the session
-            session.add(new_event)
-            session.flush()
-            event_id = new_event.id
-            
-            if event_id > 40:
-                #delete one event for every event added after 40
-                session.delete(session.query(Event).get(int(event_id-30)))
+            else:
                 
-            # Commit the session and close the connection
-            session.commit()
-            session.close()
+                y = json.loads(response.text)
+                
+        
             
-            print('Event id for new event added is '+str(event_id))
+        
+                discharge_json = y['value']['timeSeries'][0]['values']
+                SSC_json = y['value']['timeSeries'][1]['values']
             
-            return event_id
+            
+                discharge = extract_values(discharge_json, 'value')
+                SSC = extract_values(SSC_json, 'value')
+                time = extract_values(SSC_json, 'dateTime')
+                for i in range(0,len(time)):
+                    time[i] = time[i].replace('T',' ')
+                    datetime_object = datetime.strptime(time[i][0:-10],"%Y-%m-%d %H:%M:%S")
+                    time[i] = datetime_object
+                
+        trajectory_points = []
+        for i in range(0,len(discharge)):
+            try:
+                date_time = time[i]
+                flow = discharge[i]
+                concentration = SSC[i]
+            
+                trajectory_points.append(TrajectoryPoint(index = i, time=date_time, flow=flow,concentration=concentration))
+                
+            except ValueError:
+                continue
+            
+            
+            
+            
+        
+        #Create new event record
+        #new_data_id = uuid.uuid4()
+        new_event = Event(
+            #id = str(new_data_id),
+            siteNumber=sites,
+            siteName = 'n/a',
+            startDate = start,
+            endDate = end
+        
+        )
+        trajectory = Trajectory()
+        new_event.trajectory = trajectory
+        trajectory.points = trajectory_points
+        
+        # Get connection/session to database
+        Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
+        session = Session()
+
+        # Add the new dam record to the session
+        session.add(new_event)
+        session.flush()
+        event_id = new_event.id
+        
+        if event_id > 40:
+            #delete one event for every event added after 40
+            session.delete(session.query(Event).get(int(event_id-30)))
+            
+        # Commit the session and close the connection
+        session.commit()
+        session.close()
+        
+        print('Event id for new event added is '+str(event_id))
+        
+        return event_id
         
     except Exception as e:
         # Careful not to hide error. At the very least log it to the console
@@ -339,6 +505,7 @@ class Segments(Base):
     PeakConc = Column(Float)
     TimetoPeakConc= Column(String)
     DiffPeakQPeakC = Column(String)
+    HI = Column(Float)
     
     #statistics for segment
     
@@ -398,12 +565,11 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
             start_index = event_indexes[0]
             end_index = event_indexes[-1]
     
-    
+            
             seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
             
             
             segments.append(seg)
-            
         
         
         
@@ -411,6 +577,7 @@ def segmentation(event_id,fc,PKThreshold,ReRa,BSLOPE,ESLOPE,SC,MINDUR,dyslp):
         
         
         
+       
         event.trajectory.segments = segments
         
         
@@ -461,7 +628,44 @@ def create_segment(event_flow,event_concentration,event_time,start_index,end_ind
     TimetoPeakConc = str(TimetoPeakConc)
     DiffPeakQPeakC = str(DiffPeakQPeakC)
     
-    seg = Segments(start = start_index,end = end_index,duration = duration,PeakQ=PeakQ,baseflow = baseflow,timetoPeakQ=timetoPeakQ,QRecess = QRecess,PeakConc=PeakConc,TimetoPeakConc = TimetoPeakConc,DiffPeakQPeakC = DiffPeakQPeakC,startTime = startTime, endTime = endTime)
+    #HI function takes normalized values
+    event_flow_norm = np.asarray(event_flow)
+    event_concentration_norm = np.asarray(event_concentration)
+    
+    if (max(event_flow_norm ) - min(event_flow_norm )) !=0:
+        event_flow_norm = (event_flow_norm  - min(event_flow_norm )) / (max(event_flow_norm ) - min(event_flow_norm )) 
+    
+    if (max(event_concentration_norm ) - min(event_concentration_norm ))  !=0:
+        event_concentration_norm= (event_concentration_norm  - min(event_concentration_norm )) / (max(event_concentration_norm ) - min(event_concentration_norm )) 
+    
+    event_flow_norm = np.asarray(event_flow_norm)
+    event_concentration_norm = np.asarray(event_concentration_norm)
+    
+    
+    discharge_df = pd.DataFrame({'valuedatetime': event_time, 'datavalue': event_flow_norm})
+    response_df = pd.DataFrame({'valuedatetime': event_time, 'datavalue': event_concentration_norm})
+    
+    
+    
+    
+    
+    timespacing = event_time[1]-event_time[0]
+    timespacing = timespacing.total_seconds()
+    timespacing = int(timespacing/60)
+    
+    try:
+        hystdict = hysteresisMetrics(discharge_df,response_df, timespacing, timespacing, debug=False, interpall=True,
+                       discharge_time_spacing_units='minutes', response_time_spacing_units='minutes', )
+        H_Ind = hystdict["HI_mean_with_Interp"]
+    except Exception as e:
+        H_Ind = 0
+        
+    
+   
+    
+    
+    
+    seg = Segments(start = start_index,end = end_index, duration = duration,PeakQ=PeakQ,baseflow = baseflow,timetoPeakQ=timetoPeakQ,QRecess = QRecess,PeakConc=PeakConc,TimetoPeakConc = TimetoPeakConc,DiffPeakQPeakC = DiffPeakQPeakC,startTime = startTime, endTime = endTime,HI = H_Ind)
     
     return seg
             
@@ -793,6 +997,7 @@ def retrieve_metrics(event_id,sub_event):
         metrics_dict['Peak concentration'] = segment.PeakConc
         metrics_dict['Time to peak concentration'] = segment.TimetoPeakConc
         metrics_dict['Difference between peak Q and peak C (hrs)'] = segment.DiffPeakQPeakC
+        metrics_dict['Hysteresis Index'] = segment.HI
     
     
 
@@ -880,7 +1085,9 @@ def upload_trajectory(hydrograph_file):
                     event_concentration = concentration_all[start_index:end_index]
                     event_time = time_all[start_index:end_index]
     
+                    
                     seg = create_segment(event_flow,event_concentration,event_time,start_index,end_index)
+                    
                     segments.append(seg)
         
             
@@ -948,7 +1155,8 @@ def download_file(event_id):
         
         #create a file and return path, and download file
         #fname = str(event_id)+'_file.csv'
-        fname = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(event_id)+'_file_temp.csv'
+        fileDir = os.path.dirname(__file__)
+        fname = fileDir + '/public/files/'+str(event_id)+'_file_temp.csv'
         fout = open(fname, 'w')
         csvw = csv.DictWriter(fout, fieldnames = ['index','time','flow','concentration','segment'])
         csvw.writeheader()
