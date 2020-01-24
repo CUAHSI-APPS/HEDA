@@ -4,7 +4,7 @@
 {% block app_content %}
 
 
-  <h2>Retrieve data from USGS</h2>
+  <h2>Retrieve data</h2>
 <form id="add-data-form" method="post">
     
     <div class="container">
@@ -12,7 +12,9 @@
             <div class="col-sm-2">
                 {% gizmo select_input %}
             </div>
-            
+            <div class="col-sm-2">
+                {% gizmo network_input %}
+            </div>
         </div>
         <div class="row">
             {% csrf_token %}

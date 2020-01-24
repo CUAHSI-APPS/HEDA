@@ -110,22 +110,32 @@ class TimeSeries(object):
 def add_new_data_cuahsi(site_code, start, end, concentration_param,network):
     
     
+    #debug variables
+    #variable_code = '63680'
+    #network='NWISUV'
+    #site_code = 'NWISUV:01362500'
+    #site_code = network+':'+site_code
+    #st = datetime(2019, 6, 4)
+    #et = datetime(2019,6,4)
+
+
     # define the web service info
-    
-    network='NWISUV'
+    st = datetime.strptime(start, '%Y-%m-%d')
+    et = datetime.strptime(end, '%Y-%m-%d')
+    site_code = network+':'+site_code
+   
     wsdl = 'http://hydroportal.cuahsi.org/'+network.lower()+'/cuahsi_1_1.asmx?WSDL'
     #wsdl = f'http://hydroportal.cuahsi.org/{network.lower()}/cuahsi_1_1.asmx?WSDL'
-    print(wsdl)
+    #print(wsdl)
     
     discharge_pram = '00060'
     
     # collect TMAX for Everett
     client = Client(wsdl)
-    site_code = 'NWISUV:01362500'
-    variable_code = '63680'
-    st = datetime(2019, 6, 4)
-    et = datetime(2019,6,10)
-    concentration_return = client.service.GetValuesObject(site_code, variable_code, st, et, '')
+    
+    
+    
+    concentration_return = client.service.GetValuesObject(site_code, concentration_param, st, et, '')
     concentration_obj = TimeSeries(concentration_return)
     
     flow_return = client.service.GetValuesObject(site_code, discharge_pram, st, et, '')
@@ -153,7 +163,7 @@ def add_new_data_cuahsi(site_code, start, end, concentration_param,network):
     if len(flow) != len(concentration):
         print('Flow values returned : '+str(len(flow)))
         print('Concentration values returned : '+str(len(concentration)))
-        print('Error: Number of flow and concentration values returned not equal.')
+        print('Warning: Number of flow and concentration values returned not equal.')
         
     
     

@@ -34,7 +34,7 @@ class Heda(TethysAppBase):
         UrlMap(
                 name='add_data',
                 #url='heda/data/add/{event_id}/{site_number}/{start_date}/{end_date}/{concentration_parameter}',
-                url= 'heda/data/add/{event_id}/{site_number}/{start_date}/{end_date}/{concentration_parameter}/{fc}/{PKThreshold}/{ReRa}/{MINDUR}/{BSLOPE}/{ESLOPE}/{SC}/{dyslp}/{segment_button_disable}/{download_button_disable}/{select_input}',
+                url= 'heda/data/add/{event_id}/{site_number}/{start_date}/{end_date}/{concentration_parameter}/{fc}/{PKThreshold}/{ReRa}/{MINDUR}/{BSLOPE}/{ESLOPE}/{SC}/{dyslp}/{segment_button_disable}/{download_button_disable}/{select_input}/{network}',
                 controller='heda.controllers.add_data'
             ),
         

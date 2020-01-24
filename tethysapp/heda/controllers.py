@@ -126,7 +126,7 @@ def home(request):
 
 
 @login_required()
-def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI' ):
+def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV'):
     """
     Controller for the Add Data page.
     
@@ -210,9 +210,10 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
             
             #return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
-            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network}))
+            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
             
-            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
+            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
                     
 
         messages.error(request, "Please fix errors.")
@@ -260,7 +261,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 segment_button_disable = False
                 download_button_disable = False
                 
-                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+                
+                #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network}))
             
                 #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable)}))
                 
@@ -281,6 +284,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         end_date = request.POST.get('end-date', None)
         concentration_parameter = request.POST.get('concentration-parameter',None)
         select_input = request.POST.get('select-input',None)
+        network = request.POST.get('network',None)
        
         # Validate
         if not site_number:
@@ -304,24 +308,25 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         
             #segmentation parameters
             
-            event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter,source = select_input, network ='dummy' )
+            event_id = add_new_data(sites=site_number, start=start_date,end = end_date, concentration = concentration_parameter,source = select_input, network =network )
             
             #hydrograph_plot =create_hydrograph(event_id)
             
-            print('Event '+str(event_id) +'added')
+            
             if not event_id:
                 messages.error(request, "Unable to retrieve data please check parameters or try again after a few minutes.")
                 segment_button_disable = True
+                print('event not added')
                 
                 
             else:
+                print('Event '+str(event_id) +'added')
+                
                 segment_button_disable = False
                 download_button_disable = False
                 
-                #return redirect(reverse('heda:add_data', kwargs={"event_id": '92',"site_number":'test',"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter}))
-                
-                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
-                
+                return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network}))
+            
             
             
         else:
@@ -357,12 +362,11 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
             else:
                 messages.info(request, 'Unable to download data file.')
             
-            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
+            
+            
+            return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network}))
                 
-            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"select_input":select_input}))
-                
-            #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
-
+            
         messages.error(request, "Unknown problem.")
 
         
@@ -379,9 +383,15 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                            initial=['USGS'])
     
     
-    
+    network_input = TextInput(
+        display_text='Network (*only-CUAHSI)',
+        name='network',
+        initial=network,
+        placeholder='e.g.: NWISUV',
+        error=site_number_error,
+        #attributes={'form': 'retrieve-form'},
+    )
 
-    
     
     site_number_input = TextInput(
         display_text='Site Number',
@@ -594,6 +604,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         'hydrograph_file_error': hydrograph_file_error,
         'concentration_parameter_input':concentration_parameter_input,
         'select_input': select_input,
+        'network_input': network_input,
         
         
 
