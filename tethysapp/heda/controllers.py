@@ -499,7 +499,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     )
 
     PKThreshold_input = TextInput(
-        display_text='PKThreshold',
+        display_text='Peak Threshold',
         name='PKThreshold',
         initial=PKThreshold,
         placeholder='e.g.: 0.03',
