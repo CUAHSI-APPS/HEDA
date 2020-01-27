@@ -16,9 +16,143 @@ label_size_2 = 25
 cap_size ='n/a'
 cqtcolor= 'g'
 
-
-
 def create_hydrograph(event_id, height='520px', width='100%'):
+# Build up Plotly plot
+    
+    time,flow,concentration,segments=get_conc_flow_seg(event_id)
+    
+    
+    if len(segments)==0:
+        d = {}
+        d['start'] = 0
+        d['end'] = len(flow)
+        segments.append(d)
+           
+    
+    
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    
+    
+    
+    
+    
+    #add all the flow
+    fig.add_trace(go.Scatter(
+            x=time,
+            y=flow,
+            name='Hydrograph',
+            mode = 'lines',
+            line={'color': 'blue', 'width': 1},
+    ),
+    secondary_y=False,
+    )
+    
+    
+    
+    flow = np.asarray(flow)
+    event_counter = 1
+    
+    for segment in segments:
+        event_flow = flow[segment['start']:segment['end']]
+        event_time = time[segment['start']:segment['end']]
+        #event_concentration = concentration[segment['start']:concentration['end']]
+        
+        fig.add_trace(go.Scatter(
+            x=event_time,
+            y=event_flow,
+            mode = 'lines',
+            line={'color': 'red', 'width': 4, 'shape': 'spline'},
+            name="Event " +str(event_counter), 
+            
+        
+        ),
+        secondary_y=False,
+        )
+        
+        
+        event_counter = event_counter + 1
+    
+    
+    print('max concentration '+str(max(concentration)))
+    #add all concentration
+    print(len(time))
+    print(len(concentration))
+    
+    fig.add_trace(go.Scatter(
+            x=time,
+            y=concentration,
+            name='Concentration graph',
+            mode = 'lines',
+            line={'color': 'orange', 'width': 1},
+    ),
+    secondary_y=True,
+    )
+   
+    
+    
+    
+    fig.update_layout(
+    xaxis=go.layout.XAxis(
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                        label="1m",
+                        step="month",
+                        stepmode="backward"),
+                    dict(count=6,
+                        label="6m",
+                        step="month",
+                        stepmode="backward"),
+                    dict(count=1,
+                        label="YTD",
+                        step="year",
+                        stepmode="todate"),
+                    dict(count=1,
+                        label="1y",
+                        step="year",
+                        stepmode="backward"),
+                    dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True
+            ),
+            type="date"
+        )
+    
+    )
+    
+    # Set x-axis title
+    fig.update_xaxes(title_text="Time")
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Flow (cfs)", secondary_y=False)
+    fig.update_yaxes(title_text="Concentration", secondary_y=True)
+
+    
+    if event_id != '1':
+        title = 'Hydrograph with {0} events'.format(str(len(segments)))
+    else:
+        title = 'Hydrograph to validate segmentation'
+    
+    
+    
+    
+    
+    
+
+    
+    
+    hydrograph_plot = PlotlyView(fig, height='520px', width='100%')
+        
+    return hydrograph_plot
+
+
+
+
+
+def create_hydrograph_old(event_id, height='520px', width='100%'):
 # Build up Plotly plot
     print(event_id)
     time,flow,concentration,segments=get_conc_flow_seg(event_id)
@@ -39,7 +173,9 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             name='Hydrograph',
             mode = 'lines',
             line={'color': 'blue', 'width': 1},
+            
     )
+    
     
    
     
