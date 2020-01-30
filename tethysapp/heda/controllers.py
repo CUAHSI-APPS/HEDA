@@ -31,7 +31,7 @@ class Echo:
         """Write the value by returning it, instead of storing in a buffer."""
         return value
         
-        
+#this is a comment for syncing       
 
 @login_required()
 def home(request):
