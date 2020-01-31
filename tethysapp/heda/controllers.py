@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.shortcuts import render
-from tethys_sdk.permissions import login_required
+#from tethys_sdk.permissions import login_required
+from django.contrib.auth.decorators import login_required
 from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView,RangeSlider, SelectInput
 
 from django.shortcuts import reverse
@@ -389,7 +390,10 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                            multiple=False,
                            original=True,
                            options=[('USGS', 'USGS'), ('CUAHSI', 'CUAHSI')],
-                           initial=['USGS'])
+                           initial=['USGS'],
+						   attributes={'data-toggle':'tooltip',
+				           'data-placement':'top',
+				   	       'title':'Choose USGS NWIS or CUAHSI-HIS'})
     
     
     network_input = TextInput(
@@ -398,7 +402,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         initial=network,
         placeholder='e.g.: NWISUV',
         error=site_number_error,
-        #attributes={'form': 'retrieve-form'},
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Enter the CUAHSI data source provider/network ID'},
     )
 
     
@@ -406,9 +412,11 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         display_text='Site Number',
         name='site-number',
         initial=site_number,
-        placeholder='e.g.: 01646500',
+        placeholder='e.g.: 01362500',
         error=site_number_error,
-        #attributes={'form': 'retrieve-form'},
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'USGS or CUAHSI HIS Site Number'},
     )
     
     # Define form gizmos
@@ -416,8 +424,11 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         display_text='Concentration code',
         name='concentration-parameter',
         placeholder='e.g.: 63680',
-        initial=concentration_parameter, #'63680'
+        initial=concentration_parameter,
         error=concentration_number_error,
+		attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Enter the USGS or CUAHSI paramater id for concentration value of interest'}
         
     )
     
@@ -433,7 +444,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         today_button=True,
         error=start_date_error,
         initial = start_date,
-        #attributes={'form': 'retrieve-form'},
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Choose starting date'}
     )
     
     end_date_input = DatePicker(
@@ -444,8 +457,10 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         start_view='decade',
         today_button=True,
         error=end_date_error,
-        initial = end_date,#'2019-06-25',
-        #attributes={'form': 'retrieve-form'},
+        initial = end_date,
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Choose ending data. Recommended not to be more than a year from starting date.'}
     )
 
     
@@ -456,7 +471,9 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         initial=dyslp,
         placeholder='e.g.: 0.001',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+		attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Dynamic slope threshold. Used to cut the flat head and end of the runoff event. Default is 0.001.'}
     )
     
     
@@ -466,63 +483,79 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         initial=MINDUR,
         placeholder='e.g.: 0',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Enter the minimum duration that a single event can be. Default is zero to not have a set minimum.'}
     )
     
     
     SC_input = TextInput(
-        display_text='SC',
+        display_text='Smoothing Coefficient',
         name='SC',
         initial=SC,
-        placeholder='e.g.: 0.4',
+        placeholder='e.g.: 4',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+                attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Smoothing coefficient determine how many filtering passes will apply on stormflow. More passes result smoother hydrograph. Default is 4'}
     )
     
     ESLOPE_input = TextInput(
-        display_text='ESLOPE',
+        display_text='ESlope',
         name='ESLOPE',
         initial=ESLOPE,
         placeholder='e.g.: 0.0001',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Ending slope threshold. Used to cut flat head and end of the runoff event. Default is 0.0001.'}
     )
     
     
     BSLOPE_input = TextInput(
-        display_text='BSLOPE',
+        display_text='BSlope',
         name='BSLOPE',
         initial=BSLOPE,
         placeholder='e.g.: 0.001',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Beginning slope threshold. Used to cut flat head and end of the runoff event. Default is 0.001.'}
     )
     
     ReRa_input = TextInput(
-        display_text='Return Ratio',
+        display_text='Return Ratio Threshold',
         name='ReRa',
         initial=ReRa,
         placeholder='e.g.: 0.1',
         disabled=segment_button_disable,
-        #error = parameter1_error,
+        attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Return ratio threshold for tolerance of ending stormflow being different from event start. Default is 0.10 (10%). Higher values (0.2-0.3) results in less multi-peaked events. Lower values (e.g. 0.05) results in more longer, multi-peaked events'}
     )
 
     PKThreshold_input = TextInput(
         display_text='Peak Threshold',
         name='PKThreshold',
         initial=PKThreshold,
-        placeholder='e.g.: 0.03',
+        placeholder='e.g.: 10',
         disabled=segment_button_disable,
         error = PKThreshold_error,
+		attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Peak threshold for detecting and event. Minimum rise above baseflow for an event to be detected. Entered in units of streamflow being analyzed (e.g. cfs for USGS)'}
     )
     
     fc_input = TextInput(
-        display_text='fc',
+        display_text='Filter Coefficient',
         name='fc',
         initial=fc,
         placeholder='e.g.: 0.995',
         disabled=segment_button_disable,
         error = fc_error,
+		attributes={'data-toggle':'tooltip',
+				   'data-placement':'top',
+				   'title':'Baseflow extraction filter coefficient. Detault is 0.995. Lower coefficient values (e.g., 0.990) results in baseflow tracking streamflow more closely. Higher values (e.g., 0.999) results in more muted baseflow.'}
     )
     
     def loading():

@@ -1,57 +1,67 @@
+
 {% extends "heda/base.html" %}
 {% load tethys_gizmos %}
 {% load staticfiles%}
 
 
 {% block app_content %}
-<img src="{% static '/heda/images/HEDA_Logo.png' %}" width=256 height=256>
-<h3>
-About
-</h3>
-The Hydrological Event Detection & Analysis (HEDA) tool is a web-client app that enables users to visualize and analyze continuous hydrological and water quality data at the event scale. The interface allows users to analyze data uploaded by the user or retrieved from the USGS NWIS and CUAHSI HIS databases.
-<br \>
-<br \>
-The HEDA tool is intended for characterization and analysis of the simultaneous water quality and streamflow response during hydrological events. HEDA is most appropriate for use in small to medium sized watersheds where rainfall-runoff processes result in distinguishable events; however, HEDA may also be applicable to other areas such as watersheds with significant snowmelt regimes.
-
-<h3>
+<img src="{% static '/heda/images/HEDA_Logo.png' %}" width=256 height=256 style="float:left; padding:10px">
+<h1>Hydrological Event Detection & Analysis (HEDA)</h1>
+<p>
+The Hydrological Event Detection & Analysis (HEDA) tool is a web-client app that enables users to visualize and analyze continuous hydrological and water quality data at the individual storm event scale. The interface allows users to analyze data uploaded by the user or retrieved from the USGS NWIS and CUAHSI HIS databases.</p>
+<p>
+The HEDA tool is intended for characterization and analysis of the simultaneous water quality and streamflow response during hydrological events. HEDA is most appropriate for use in small to medium sized watersheds where rainfall-runoff processes result in distinguishable events that can be delineated; however, HEDA may also be applicable to other areas such as watersheds with significant snowmelt events.</p>
+<hr style="clear:both">
+<h2 >
 Features:
-</h3>
-The HEDA tool has two primary features:
-<br \>
-1.    Automated detection and delineation of hydrological events from continuous time series.<br \>
-2.    Event visualization and analysis including event metrics and hysteresis analysis.
-<br \>
-<br \>
+</h2>
+<p>The HEDA tool has two primary features:</p>
+<ol>
+<li>Automated detection and delineation of hydrological events from continuous time series of streamflow.</li>
+	<li>Event visualization and analysis including calculation ofevent metrics and hysteresis analysis.</li></ol>
+<p>
 The detection and delineation of events can be performed over a year of records at a given time. The visualization and analysis of events includes the description of both streamflow and water quality metrics.
-<br \>
-<br \>
-HEDA includes the option to download as .csv files both event delineations as well as event analysis.
-<br \>
-<br \>
+</p>
+<p>HEDA includes the option to download as .csv files both event delineations as well as event metrics.</p>
+
 <h3>
-Input Files:
+Data Sources:
 </h3>
-    
-To use HEDA on user uploaded files, the data must be formatted as a .csv. An example file is provided:
-<br \>
+<p>    
+To use HEDA on user uploaded files, the data must be formatted as a .csv. It is optional to have events already delineated. An example file is provided:
+</p>
 <p>Click <a href="{% static '/heda/files/example_file.csv' %}">here</a> to download example file</p>
+<hr />
 <h3>
-What’s New:
+Credits and Acknowledgements:
 </h3>
-Credits, Authors, & Contributors:
-HEDA was developed as part of a CUAHSI Hydroinformatics Innovation Fellowship project by Dr. Scott Hamshaw and Ali Javed at the University of Vermont.
-<br \>
-Event detection and delineation algorithm is adapted from the HydRun MATLAB toolbox developed by Weigang Tang and Sean Carey at McMaster University.
-<br \>
-Tang W, Carey SK. HydRun: A MATLAB toolbox for rainfall–runoff analysis. Hydrological Processes. 2017. http://doi.org/10.1002/hyp.11185
-<br \>
-Contact:
-<br \>
-For further information or questions related to HEDA, please contact:
-<br \>
-Scott Hamshaw at scott.hamshaw@uvm.edu. Contact HydroShare for apps development questions or issues at dev@hydroshare.org.
-
-
+<p>
+HEDA was developed as part of a CUAHSI Hydroinformatics Innovation Fellowship project by Dr. Scott Hamshaw and Ali Javed at the University of Vermont.</p>
+<p>
+The event detection and delineation algorithm implemented was adapted from the method developed by Weigang Tang and Sean Carey at McMaster University and is also available as a MATLAB toolbox.
+</p>
+<blockquote>
+  <p>
+    Tang W, Carey SK. 2017. HydRun: A MATLAB toolbox for rainfall–runoff analysis. Hydrological Processes. <a href="https://doi.org/10.1002/hyp.11185" target="_blank">http://doi.org/10.1002/hyp.11185</a>
+  </p>
+</blockquote>
+<p>
+  The hysteresis index calculation algorithm implemented was adapted from teh method developed by Adam Wymore and Miguel Leon.
+</p>
+	<blockquote>
+	  <p>
+	    Wymore AS, Leon MC, Shanley JB, McDowell WH. 2019.  Hysteretic Response of Solutes and Turbidity at the Event Scale Across Forested Tropical Montane Watersheds. Frontiers in Earth Science
+	    <a href="https://doi.org/10.3389/feart.2019.00126" target="_blank">10.3389/feart.2019.00126</a>
+      </p>
+</blockquote>
+<p>Additional support was provided by Vermont EPSCoR under the Basin Resilience to Extreme Events (BREE) Project - NSF Award (OIA-155670)</p>
+<img src="{% static '/heda/images/vt_epscor_logo.png' %}" width=125 height=85 style="float:right">
+<h3>Contact:</h3>
+<p>
+	For further information or questions related to HEDA, please contact:</p>
+<p>
+Scott Hamshaw at <a href="mailto:scott.hamshaw@uvm.edu">scott.hamshaw@uvm.edu</a>. Contact HydroShare for apps development questions or issues at <a href="mailto:dev@hydroshare.org">dev@hydroshare.org</a>.
+</p>
 
 
 {% endblock %}
