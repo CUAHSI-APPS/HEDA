@@ -4,7 +4,7 @@ from tethys_sdk.permissions import login_required
 from tethys_sdk.gizmos import TextInput, MapView, Button,DatePicker, DataTableView,RangeSlider, SelectInput
 
 from django.shortcuts import reverse
-
+from collections import OrderedDict
 from django.shortcuts import redirect
 from django.contrib import messages
 
@@ -126,6 +126,8 @@ def home(request):
 
 
 @login_required()
+#def add_data(request,event_id=1,site_number = '01362500',start_date = '',end_date='',concentration_parameter = '',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
+ 
 def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
     """
     Controller for the Add Data page.
@@ -646,7 +648,7 @@ def visualize_events(request,event_id,sub_event):
             return False
     
     
-    if metrics[0]['duration'] == '-1':
+    if metrics[0]['Event Duration (hours)'] == '-1':
         try: 
             
             success = update_segmentation(int(event_id))
@@ -768,9 +770,9 @@ def visualize_events(request,event_id,sub_event):
     
     table_rows = []
     #metrics_dict = calculate_metrics(event_id,sub_event)
-    print(sub_event)
-    print('metrics length is '+str(len(metrics)))
-    metrics_dict = {}
+    #print(sub_event)
+    #print('metrics length is '+str(len(metrics)))
+    metrics_dict = OrderedDict()
     if len(metrics)>0:
         metrics_dict = metrics[int(sub_event)]
         
@@ -783,6 +785,7 @@ def visualize_events(request,event_id,sub_event):
     
     if request.POST and 'event-number' in request.POST:
         sub_event = request.POST.get('event-number', None)
+        
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
             
     metric_table = DataTableView(
@@ -791,6 +794,8 @@ def visualize_events(request,event_id,sub_event):
         searching=False,
         orderClasses=False,
         lengthMenu=[ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+        DisplayLength = -1,
+        ordering = False,
     )
     
     

@@ -8,7 +8,7 @@ from .api_access import fetch_data, extract_values #extract_tag
 
 #from plotly import graph_objs as go
 #from tethys_gizmos.gizmo_options import PlotlyView
-
+from collections import OrderedDict
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -230,13 +230,12 @@ def add_new_data(sites, start,end,concentration,source,network):
             
             
             
-            parameter_retrieve = '00060,'+str(concentration)
+            #parameter_retrieve = '00060,'+str(concentration)
+            parameter_retrieve = '00060'
             #discharge 00060
             #tributry 63680
             #parameters['parameterCd']='00060,63680'
-            print(parameter_retrieve)
             parameters['parameterCd'] = parameter_retrieve
-            
             parameters['siteStatus']='all'
             
             
@@ -245,48 +244,106 @@ def add_new_data(sites, start,end,concentration,source,network):
             Host =  'https://waterservices.usgs.gov/nwis/iv/'
             
             response = fetch_data(Host,parameters)
+            #now extract concentration data
+            parameter_retrieve = str(concentration)
+            parameters['parameterCd'] = parameter_retrieve
             
+            response_conc = fetch_data(Host,parameters)
+            success_response = True
             if not response:
+                print('USGS data pull failed for discharge')
+                success_response = False
                 return False
             
-            if response.status_code != 200:
+            elif response.status_code != 200:
+                print('USGS data pull failed for discharge')
+                success_response = False
                 return False
                 
-            else:
+            if not response_conc:
+                print('USGS data pull failed for concentration')
+                success_response = False
+                return False
+            
+            elif response.status_code != 200:
+                print('USGS data pull failed for concentration')
+                success_response = False
+                return False
                 
-                y = json.loads(response.text)
+            if success_response:
                 
+                print('Data sucessfully pulled from USGS. Verfying the accuracy of pulled data.')
+                discharge_response = json.loads(response.text)
+                concentration_response = json.loads(response_conc.text)
         
             
         
-                discharge_json = y['value']['timeSeries'][0]['values']
-                SSC_json = y['value']['timeSeries'][1]['values']
+                discharge_json = discharge_response['value']['timeSeries'][0]['values']
+                concentration_json = concentration_response['value']['timeSeries'][0]['values']
             
             
-                discharge = extract_values(discharge_json, 'value')
-                SSC = extract_values(SSC_json, 'value')
-                time = extract_values(SSC_json, 'dateTime')
-                for i in range(0,len(time)):
-                    time[i] = time[i].replace('T',' ')
-                    datetime_object = datetime.strptime(time[i][0:-10],"%Y-%m-%d %H:%M:%S")
-                    time[i] = datetime_object
+                flow = extract_values(discharge_json, 'value')
+                concentration = extract_values(concentration_json,'value')
                 
+                flow_dates = extract_values(discharge_json, 'dateTime')
+                conc_dates = extract_values(concentration_json, 'dateTime')
+                
+                flow_final =[]
+                concentration_final = []
+                date_time_final = []
+                
+                flow_counter = 0
+                concentration_counter = 0
+                print('starting matching flow and concentration...')
+                while flow_counter<len(flow_dates) and concentration_counter<len(conc_dates):
+                    if conc_dates[concentration_counter] == flow_dates[flow_counter]:
+                        flow_final.append(flow[flow_counter])
+                        concentration_final.append(concentration[concentration_counter])
+                        date_time_final.append(flow_dates[flow_counter])
+            
+                        #date_time_final.append(datetime.strptime(flow_dates[flow_counter][0:-10],"%Y-%m-%d %H:%M:%S"))
+                        concentration_counter = concentration_counter + 1
+                        flow_counter = flow_counter + 1
+            
+        
+                    #missing flow value
+                    elif conc_dates[concentration_counter] < flow_dates[flow_counter]:
+                        concentration_counter = concentration_counter + 1
+            
+                    #missing concentration value
+                    elif flow_dates[flow_counter] < conc_dates[concentration_counter]:
+                        concentration_counter = concentration_counter + 1
+            
+                
+                
+                print('flow and concentration matched.')
+                time_reformatted = []
+                for i in range(0,len(date_time_final)):
+                    time_temp = date_time_final[i].replace('T',' ')
+                    datetime_object = datetime.strptime(time_temp[0:-10],"%Y-%m-%d %H:%M:%S")
+                    time_reformatted.append(datetime_object)
+        
+        
+        
+        time = time_reformatted        
         trajectory_points = []
-        for i in range(0,len(discharge)):
+        
+        for i in range(0,len(flow_final)):
             try:
                 date_time = time[i]
-                flow = discharge[i]
-                concentration = SSC[i]
+                flow = flow_final[i]
+                concentration = concentration_final[i]
             
                 trajectory_points.append(TrajectoryPoint(index = i, time=date_time, flow=flow,concentration=concentration))
                 
             except ValueError:
+                print('Unable to format pulled data. Missing data values may be the reason.')
                 continue
             
             
             
             
-        
+       
         #Create new event record
         #new_data_id = uuid.uuid4()
         new_event = Event(
@@ -301,6 +358,7 @@ def add_new_data(sites, start,end,concentration,source,network):
         new_event.trajectory = trajectory
         trajectory.points = trajectory_points
         
+        print('Data formated, saving event to database.')
         # Get connection/session to database
         Session = app.get_persistent_store_database('tethys_super', as_sessionmaker=True)
         session = Session()
@@ -715,9 +773,11 @@ def create_segment(event_flow,event_concentration,event_time,start_index,end_ind
     
     DiffPeakQPeakC = str(overall_hours)
     
-    duration = str(duration)
-    timetoPeakQ = str(timetoPeakQ)
-    TimetoPeakConc = str(TimetoPeakConc)
+    duration = str((duration.total_seconds()/60)/60)
+    duration = duration
+    #print('durationc calculated is..'+duration)
+    timetoPeakQ = str((timetoPeakQ.total_seconds() / 60)/60)
+    TimetoPeakConc = str((TimetoPeakConc.total_seconds() / 60)/60)
     DiffPeakQPeakC = str(DiffPeakQPeakC)
     
     #HI function takes normalized values
@@ -1079,20 +1139,25 @@ def retrieve_metrics(event_id,sub_event):
     metrics = []
     
     for segment in trajectory.segments:
-        metrics_dict={}
-        metrics_dict['startTime'] = segment.startTime
-        metrics_dict['endTime'] = segment.endTime  
-        metrics_dict['duration'] = segment.duration
-        metrics_dict['PeakQ'] = segment.PeakQ
-        metrics_dict['baseflow'] = segment.baseflow
-        metrics_dict['Time to peak discharge'] = segment.timetoPeakQ
-        metrics_dict['Q recess'] = segment.QRecess
-        metrics_dict['Peak concentration'] = segment.PeakConc
-        metrics_dict['Time to peak concentration'] = segment.TimetoPeakConc
-        metrics_dict['Difference between peak Q and peak C (hrs)'] = segment.DiffPeakQPeakC
-        metrics_dict['Hysteresis Index'] = round(segment.HI,3)
-        metrics_dict['start index'] = segment.start
-        metrics_dict['end index'] = segment.end
+        metrics_dict=OrderedDict()
+        metrics_dict['Start Time'] = segment.startTime
+        metrics_dict['End Time'] = segment.endTime  
+        metrics_dict['Peak Discharge'] = segment.PeakQ
+        metrics_dict['Peak Concentration'] = segment.PeakConc
+        metrics_dict['Event Duration (hours)'] = segment.duration
+        metrics_dict['Time to Peak Discharge (hours)'] = segment.timetoPeakQ
+        metrics_dict['Time to peak Concentration (hours)'] = segment.TimetoPeakConc
+        metrics_dict['Peak Q to Peak C Offset (hours)'] = segment.DiffPeakQPeakC
+        metrics_dict['Initial Baseflow'] = segment.baseflow
+        metrics_dict['Hysteresis Index (HI)'] = round(segment.HI,3)
+        
+        #metrics_dict['Q recess'] = segment.QRecess
+        
+        
+        
+        
+        #metrics_dict['start index'] = segment.start
+        #metrics_dict['end index'] = segment.end
     
 
         
@@ -1120,31 +1185,62 @@ def upload_trajectory(hydrograph_file):
     flow_all = []
     concentration_all = []
     time_all = []
+    
+    header = []
+    for line in hydrograph_file:
+        sline = line.decode().split(',')
+        for value in sline:
+            header.append(value.strip())
+        break
+        
+    print(header)
+    if header[0]!= 'index' or header[1]!='time' or ('flow' not in header[2]) or header[3]!='concentration':
+        print('Error: Incorrect file format')
+        return False
+        
+    dummy_segment = True
+    if len(header) >4:
+        if header[4] =='segment':
+            dummy_segment = False
+    
+   
     try:
         
         for line in hydrograph_file:
             
             
             sline = line.decode().split(',')
-        
+            if dummy_segment:
+                sline.append('1')
+            for i in range(0,len(sline)):
+                sline[i] = sline[i].strip()
+                
+            #skip header
+            if sline[0]=='index':
+                continue
             try:
+                
                 index = int(sline[0])
                 time = sline[1]
                 flow = float(sline[2])
                 concentration = float(sline[3])
                 segment = int(sline[4])
+            
                 segment_index.append(segment)
                 segments_all.add(segment)
-                time = datetime.strptime(time,"%Y-%m-%d %H:%M:%S")
+            
+                time = datetime.strptime(time,"%m/%d/%y %H:%M")
                 flow_all.append(flow)
                 time_all.append(time)
                 concentration_all.append(concentration)
+                
                 trajectory_points.append(TrajectoryPoint(index = index, time=time, flow=flow,concentration=concentration))
             except ValueError:
                 continue
                 print('value error')
 
-        
+        print('data formatted')
+        print(len(trajectory_points))
         if len(trajectory_points) > 0:
             print('length of uploaded trajectory: '+str(len(trajectory_points)))
             #Create new event record
@@ -1234,7 +1330,8 @@ def download_file(event_id):
         for point in event.trajectory.points:
             d= {}
             d['index'] = point.index
-            d['time'] = point.time
+            timestampStr = point.time.strftime("%m/%d/%y %H:%M")
+            d['time'] = timestampStr
             d['flow'] = point.flow
             d['concentration'] = point.concentration
             d['segment'] = int(segment_list[i])

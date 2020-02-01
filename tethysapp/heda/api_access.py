@@ -36,12 +36,12 @@ def fetch_data(host,parameters):
 
     # sending post request and saving response as response object 
     try:
-        print('retrieving data')
+        print('retrieving data from USGS.')
         r = requests.get(url = URL, params = parameters) 
         return r
     except requests.exceptions.RequestException as e:
         print(e)
-        print('Except of request entered')
+        print('USGS response not stadard or expected.')
         return False
   
 

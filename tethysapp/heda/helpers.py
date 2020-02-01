@@ -49,6 +49,17 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     )
     
     
+    fig.add_trace(go.Scatter(
+            x=time,
+            y=concentration,
+            name='Concentration graph',
+            mode = 'lines',
+            line={'color': 'orange', 'width': 1},
+    ),
+    secondary_y=True,
+    )
+    
+    
     
     flow = np.asarray(flow)
     event_counter = 1
@@ -63,7 +74,7 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             y=event_flow,
             mode = 'lines',
             line={'color': 'red', 'width': 4, 'shape': 'spline'},
-            name="Event " +str(event_counter), 
+            name="", 
             
         
         ),
@@ -74,20 +85,9 @@ def create_hydrograph(event_id, height='520px', width='100%'):
         event_counter = event_counter + 1
     
     
-    print('max concentration '+str(max(concentration)))
-    #add all concentration
-    print(len(time))
-    print(len(concentration))
+
     
-    fig.add_trace(go.Scatter(
-            x=time,
-            y=concentration,
-            name='Concentration graph',
-            mode = 'lines',
-            line={'color': 'orange', 'width': 1},
-    ),
-    secondary_y=True,
-    )
+    
    #this is a comment for syncing
     
     
@@ -119,7 +119,8 @@ def create_hydrograph(event_id, height='520px', width='100%'):
                 visible=True
             ),
             type="date"
-        )
+        ),
+        showlegend=False
     
     )
     
@@ -638,13 +639,13 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
     )
     
     
-    fig.update_yaxes(title_text="Concentration", row=1, col=1)
-    fig.update_xaxes(title_text="Discharge", row=1, col=1)
+    fig.update_yaxes(title_text="Concentration", row=2, col=1)
+    fig.update_xaxes(title_text="Discharge", row=2, col=1)
     
     
-    fig.update_xaxes(title_text="Time", row=1, col=2)
-    fig.update_yaxes(title_text="Discharge", row=1, col=2,secondary_y = False)
-    fig.update_yaxes(title_text="Concentration", row=1, col=2,secondary_y = True)
+    fig.update_xaxes(title_text="Time", row=1, col=1)
+    fig.update_yaxes(title_text="Discharge", row=1, col=1,secondary_y = False)
+    fig.update_yaxes(title_text="Concentration", row=1, col=1,secondary_y = True)
     
     
 
