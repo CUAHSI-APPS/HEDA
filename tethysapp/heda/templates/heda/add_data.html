@@ -1,10 +1,13 @@
 {% extends "heda/base.html" %}
 {% load tethys_gizmos %}
+{% load staticfiles%}
 
 {% block app_content %}
 
-
-  <h2>Retrieve data</h2>
+<div id="retrievedata">
+	<h2>Step 1: Import Data</h2>
+  <h3>Retrieve data</h3>
+	<p>Import data from either USGS NWIS or CUAHSI-HIS. Streamflow and concentration must be from same site location.</p>
 <form id="add-data-form" method="post">
     
     <div class="container">
@@ -36,7 +39,8 @@
 </form>
 <hr />
 
-<h2>Upload data file</h2>
+<h3>Upload data file</h3>
+	<p>Upload time series of streamflow and concentration. Can import previously segmeted events. Example file <a href="{% static '/heda/files/example_file.csv' %}">here</a>.</p>
 <form id="upload-data-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     
@@ -47,19 +51,21 @@
             </div>
     {% gizmo upload_button %}
 </form>
+</div>
 <hr />
 
-<h2>Event segmentation</h2>
+<h2>Step 2: Event segmentation</h2>
+<p>Detects and segments storm events from continuous record of streamflow using HydRun algorithm (<a href="https://doi.org/10.1002/hyp.11185" target="_blank">Tang & Carey 2017</a>).</p>
 <form id="segment-data-form" method="post">
-    <h3>HydRun parameters</h3>
+    <h3>Event Detection and Segmentation Parameter:</h3>
     {% csrf_token %}
     <div class="container">
         <div class="row">
-            <div class="col-sm-2">
-                {% gizmo fc_input %}
+			<div class="col-sm-2">
+                {% gizmo PKThreshold_input %}
             </div>
             <div class="col-sm-2">
-                {% gizmo PKThreshold_input %}
+                {% gizmo fc_input %}
             </div>
             <div class="col-sm-2">
                 {% gizmo ReRa_input %}
@@ -68,17 +74,18 @@
                 {% gizmo MINDUR_input %}
             </div>
         </div>
-        <h3>Optional HydRun parameters</h3>
+        <h3>Optional Parameters:</h3>
+		<p>These values can be adjusted for futher tuning of the event segmentation. Refer to <a href="https://doi.org/10.1002/hyp.11185" target="_blank">Tang & Carey (2017)</a> description of HydRun for more details.</p>
         <div class="row">
-            <div class="col-sm-2">
-                {% gizmo ESLOPE_input %}
-            </div>
-            <div class="col-sm-2">
+			<div class="col-sm-2">
                 {% gizmo SC_input %}
             </div>
-            <div class="col-sm-2">
+			<div class="col-sm-2">
                 {% gizmo BSLOPE_input %}
                 
+            </div>
+            <div class="col-sm-2">
+                {% gizmo ESLOPE_input %}
             </div>
             <div class="col-sm-2">
                 {% gizmo dyslp_input %}
