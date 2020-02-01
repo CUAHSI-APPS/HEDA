@@ -109,7 +109,24 @@ def home(request):
             'title': 'Next'
         }
     )
+    
+    HEDA_button = Button(
+        display_text='Run HEDA tool',
+        name='HEDA-button',
+        #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
+            
+        href=reverse('heda:add_data', kwargs={"event_id": '1',"site_number":'no',"start_date":'no',"end_date":'no',"concentration_parameter":'no',"fc":'0.996', "PKThreshold": 'no' , "ReRa": '0.1', "MINDUR":'0',"BSLOPE":'0.0001',"ESLOPE":'0.001',"SC":'4',"dyslp":'0.001',"segment_button_disable":str(True),"download_button_disable":str(True),"select_input":'CUAHSI',"network":'NWISUV',"visualize_button_disable" : str(True)}),
+        attributes={
+            'data-toggle': 'tooltip',
+            'data-placement': 'top',
+            'title': 'Run HEAD tool'
+        }
+    )
 
+
+
+
+    
     context = {
         'save_button': save_button,
         'edit_button': edit_button,
@@ -118,6 +135,7 @@ def home(request):
         'next_button': next_button,
         'dam_inventory_map': dam_inventory_map,
         'visualize': visualize,
+        'HEDA_button':HEDA_button,
     }
     
     
@@ -127,14 +145,28 @@ def home(request):
 
 
 @login_required()
-#def add_data(request,event_id=1,site_number = '01362500',start_date = '',end_date='',concentration_parameter = '',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
+#def add_data(request,event_id=1,site_number = '01362500',start_date = '',end_date='',concentration_parameter = '',fc = '0.996', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
  
-def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-04',end_date='2019-06-25',concentration_parameter = '63680',fc = '0.995', PKThreshold = '0.03' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '0.001',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
+def add_data(request,event_id=1,site_number = 'no',start_date = 'no',end_date='no',concentration_parameter = 'no',fc = '0.996', PKThreshold = 'no' ,ReRa = '0.1', MINDUR = '0',   BSLOPE = '0.0001',ESLOPE = '0.4',SC = '4',dyslp = '0.001',segment_button_disable=True, download_button_disable=True,select_input = 'CUAHSI',network = 'NWISUV',visualize_button_disable = True):
     """
     Controller for the Add Data page.
     
     """
-
+    #link to use on base page template html
+    #href="/apps/heda/data/add/1/01362500/2019-06-04/2019-06-26/63680/0.996/0.03/0.1/0/0.0001/0.001/4/0.001/1/1/USGS/NWISUV/True/"
+    #default blank values
+    if site_number == 'no':
+        site_number = ''
+    if concentration_parameter == 'no':
+        concentration_parameter = ''   
+    if start_date == 'no':
+        start_date = ''    
+    if end_date == 'no':
+        end_date = ''
+    if PKThreshold  == 'no':
+      PKThreshold = ''  
+    
+    
     # Default Values
     #site_number = '01646500'
     #site_number = '01362500'
@@ -177,15 +209,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
     hydrograph_plot = create_hydrograph(event_id)
     
 
-    #segmentation parameters
-    #fc = ''
-    #PKThreshold = '' 
-    #ReRa = ''
-    #BSLOPE = ''
-    #ESLOPE = ''
-    #SC = ''
-    #MINDUR = ''
-    #dyslp = ''
+    
 
     
     
@@ -220,7 +244,17 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
             else:
                 messages.info(request, 'Unable to upload trajectory. Please try again or check file format.')
             
-            #return redirect(reverse('heda:add_data', kwargs={"event_id": success}))
+            if site_number =='':
+                site_number ='no'
+            if PKThreshold == '':
+                PKThreshold ='no'
+            if start_date == '':
+                start_date = 'no'
+            if end_date == '':
+                end_date = 'no'
+            if concentration_parameter =='':
+                concentration_parameter = 'no'
+            
             return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
             
             #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input}))
@@ -273,6 +307,19 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 segment_button_disable = False
                 download_button_disable = False
                 visualize_button_disable = False
+                
+                
+                if site_number =='':
+                    site_number ='no'
+                if PKThreshold == '':
+                    PKThreshold ='no'
+                if start_date == '':
+                    start_date = 'no'
+                if end_date == '':
+                    end_date = 'no'
+                if concentration_parameter =='':
+                    concentration_parameter = 'no'
+                
                 
                 return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
             
@@ -331,11 +378,23 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 
                 
             else:
-                print('Event '+str(event_id) +'added')
+                #print('Event '+str(event_id) +' added')
                 
                 segment_button_disable = False
                 download_button_disable = False
                 visualize_button_disable = True
+                
+                
+                if site_number =='':
+                    site_number ='no'
+                if PKThreshold == '':
+                    PKThreshold ='no'
+                if start_date == '':
+                    start_date = 'no'
+                if end_date == '':
+                    end_date = 'no'
+                if concentration_parameter =='':
+                    concentration_parameter = 'no'
                 
                 return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
             
@@ -375,6 +434,18 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
                 messages.info(request, 'Unable to download data file.')
             
             
+            if site_number =='':
+                site_number ='no'
+            if PKThreshold == '':
+                PKThreshold ='no'
+            if start_date == '':
+                start_date = 'no'
+            if end_date == '':
+                end_date = 'no'
+            if concentration_parameter =='':
+                concentration_parameter = 'no'
+                    
+                    
             return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
             
                 
@@ -552,7 +623,7 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
         display_text='Filter Coefficient',
         name='fc',
         initial=fc,
-        placeholder='e.g.: 0.995',
+        placeholder='e.g.: 0.996',
         disabled=segment_button_disable,
         error = fc_error,
 		attributes={'data-toggle':'tooltip',
@@ -663,11 +734,12 @@ def add_data(request,event_id=1,site_number = '01362500',start_date = '2019-06-0
 def visualize_events(request,event_id,sub_event):
     event_id = int(event_id)
     sub_event = int(sub_event)
+    event_number = sub_event+1
     
+    if event_number < 1:
+        event_number = 1
     metrics = retrieve_metrics(int(event_id),int(sub_event))
     #update metrics 
-    print(metrics)
-    #check if metrics already calculated. If duration is negative then calculate
     
     if len(metrics)<1:
         try: 
@@ -701,12 +773,14 @@ def visualize_events(request,event_id,sub_event):
     end_seg = len(segments)-1
     
     if int(sub_event) > int(end_seg):
-        sub_event = str(int(sub_event) - 1 )
-        messages.info(request, 'Event id outside range.')
+        sub_event = int(sub_event) - 1 
+        event_number = sub_event + 1
+        messages.info(request, 'Event '+str(end_seg+1)+' is the last event.')
      
     if int(sub_event) < 0:
-        sub_event = str(int(sub_event) + 1 )
-        messages.info(request, 'Event id outside range.')   
+        sub_event = int(sub_event) + 1 
+        event_number = sub_event + 1
+        messages.info(request, 'Event 1 is the first event.')   
         
         
     if request.POST and 'download-button' in request.POST:
@@ -802,9 +876,7 @@ def visualize_events(request,event_id,sub_event):
     cqt_cq_plot = cqt_cq_event_plot(int(event_id),int(sub_event))
     
     table_rows = []
-    #metrics_dict = calculate_metrics(event_id,sub_event)
-    #print(sub_event)
-    #print('metrics length is '+str(len(metrics)))
+    
     metrics_dict = OrderedDict()
     if len(metrics)>0:
         metrics_dict = metrics[int(sub_event)]
@@ -818,7 +890,8 @@ def visualize_events(request,event_id,sub_event):
     
     if request.POST and 'event-number' in request.POST:
         sub_event = request.POST.get('event-number', None)
-        
+        sub_event = int(sub_event) - 1
+        sub_event = str(sub_event)
         return redirect(reverse('heda:visualize_events', kwargs={"event_id": event_id,"sub_event": sub_event}))
             
     metric_table = DataTableView(
@@ -835,9 +908,9 @@ def visualize_events(request,event_id,sub_event):
     
     event_number_slider = RangeSlider(display_text='',
                       name='event-number',
-                      min=start_seg,
-                      max=end_seg,
-                      initial=sub_event,
+                      min=start_seg+1,
+                      max=end_seg+1,
+                      initial=event_number,
                       step=1,
                       attributes={'form': 'slider-data-form'},
                       )
@@ -856,8 +929,7 @@ def visualize_events(request,event_id,sub_event):
 
     
     context = {
-        #'candq_plot':candq_plot,
-        #'cqt_plot':cqt_plot,
+
         'cq_plot':cqt_cq_plot, 
         'cancel_button': cancel_button,
         'previous_button': previous_button,
@@ -867,11 +939,11 @@ def visualize_events(request,event_id,sub_event):
         'event_number_slider':event_number_slider,
         'sub_event': sub_event,
         'jump_button':jump_button,
+        'event_number':event_number,
 
     }
     
     
-    #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id}))
     return render(request, 'heda/visualize_events.html', context)
     
     

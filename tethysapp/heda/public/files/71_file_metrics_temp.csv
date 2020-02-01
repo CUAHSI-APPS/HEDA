@@ -1,0 +1,4 @@
+Start Time,End Time,Peak Discharge,Peak Concentration,Event Duration (hours),Time to Peak Discharge (hours),Time to peak Concentration (hours),Peak Q to Peak C Offset (hours),Initial Baseflow,Hysteresis Index (HI)
+2019-06-01 00:15:00,2019-06-03 11:30:00,687.0,10.4,59.25,24.5,26.5,2.0,392.0,-0.157
+2019-06-10 14:45:00,2019-06-15 03:45:00,1250.0,386.0,109.0,12.25,8.0,-4.25,337.0,0.069
+2019-06-20 10:45:00,2019-06-23 23:15:00,762.0,33.2,84.5,13.75,11.25,-2.5,431.0,-0.016

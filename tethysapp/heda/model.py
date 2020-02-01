@@ -207,7 +207,7 @@ def add_new_data(sites, start,end,concentration,source,network):
         
         if source == 'CUAHSI':
             
-            discharge, SSC, time = add_new_data_cuahsi(sites, start, end, concentration,network)
+            flow_final, concentration_final, time_reformatted = add_new_data_cuahsi(sites, start, end, concentration,network)
         
         
         else:
@@ -376,7 +376,7 @@ def add_new_data(sites, start,end,concentration,source,network):
         session.commit()
         session.close()
         
-        print('Event id for new event added is '+str(event_id))
+        #print('Event id for new event added is '+str(event_id))
         
         return event_id
         
