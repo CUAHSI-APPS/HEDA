@@ -55,6 +55,7 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             name='Concentration graph',
             mode = 'lines',
             line={'color': 'orange', 'width': 1},
+            
     ),
     secondary_y=True,
     )
@@ -90,6 +91,10 @@ def create_hydrograph(event_id, height='520px', width='100%'):
     
    #this is a comment for syncing
     
+    if event_id != '1':
+        title = 'Number of events segmented: {0} '.format(str(len(segments)))
+    else:
+        title = 'Hydrograph to validate segmentation'
     
     
     fig.update_layout(
@@ -120,7 +125,8 @@ def create_hydrograph(event_id, height='520px', width='100%'):
             ),
             type="date"
         ),
-        showlegend=False
+        showlegend=False,
+        title_text=title,
     
     )
     
@@ -129,13 +135,9 @@ def create_hydrograph(event_id, height='520px', width='100%'):
 
     # Set y-axes titles
     fig.update_yaxes(title_text="Flow (cfs)", secondary_y=False)
-    fig.update_yaxes(title_text="Concentration", secondary_y=True)
+    fig.update_yaxes(title_text="Concentration", showgrid = False, secondary_y=True)
 
     
-    if event_id != '1':
-        title = 'Hydrograph with {0} events'.format(str(len(segments)))
-    else:
-        title = 'Hydrograph to validate segmentation'
     
     
     
@@ -511,7 +513,7 @@ def candq_event_plot(event_id, sub_event,height='520px', width='100%'):
     return hydrograph_plot   
     
     
-def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
+def cqt_cq_event_plot(event_id, sub_event,height='800px', width='100%'):
 # Build up Plotly plot
     time,flow,concentration,segments=get_conc_flow_seg(event_id)
     
@@ -537,6 +539,7 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
         rows=2, cols=2,
         column_widths=[0.6, 0.4],
         row_heights=[0.4, 0.6],
+        horizontal_spacing = 0.05,
         specs=[[{"type": "xy","secondary_y": True,"colspan":2}, None],
             [{"type": "scatter"}, {"type": "scatter3d"}]])
             
@@ -618,10 +621,14 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
         row=2, col=2
     )
 
+    fig['layout'].update(height=800, width=950)
+                                                  
     # Set theme, margin, and annotation in layout
     fig.update_layout(
         template="plotly_dark", #ggplot2, plotly_dark, seaborn, plotly, plotly_white, presentation, xgridoff
         margin=dict(r=10, t=25, b=40, l=60),
+        autosize=True,
+        #automargin=True,
         annotations=[
             go.layout.Annotation(
                 text="Source: CAUHSI - HEDA Tool",
@@ -635,6 +642,9 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
                     xaxis_title='Time',
                     yaxis_title='Discharge',
                     zaxis_title='Concentration'),
+        #showlegend=False,
+        legend_orientation="h",
+        legend=dict(x=-.1, y=1.1),
         
     )
     
@@ -651,6 +661,6 @@ def cqt_cq_event_plot(event_id, sub_event,height='520px', width='100%'):
 
     
     
-    hydrograph_plot = PlotlyView(fig, height='520px', width='100%')
+    hydrograph_plot = PlotlyView(fig, height='800px', width='100%')
     return hydrograph_plot
    
