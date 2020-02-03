@@ -663,7 +663,7 @@ def cqt_cq_event_plot(event_id, sub_event,height='800px', width='100%'):
     
 
     
-    
+    #comment to sync
     hydrograph_plot = PlotlyView(fig, height='800px', width='100%')
     return hydrograph_plot
    
