@@ -190,7 +190,7 @@ def add_new_data_cuahsi(site_code, start, end, concentration_param,network):
             
         #missing concentration value
         elif flow_dates[flow_counter] < conc_dates[concentration_counter]:
-            concentration_counter = concentration_counter + 1
+            flow_counter = flow_counter + 1
             
          
                 
@@ -296,6 +296,10 @@ def add_new_data(sites, start,end,concentration,source,network):
                 concentration_counter = 0
                 print('starting matching flow and concentration...')
                 while flow_counter<len(flow_dates) and concentration_counter<len(conc_dates):
+                    #print('concentration date is ')
+                    #print(conc_dates[concentration_counter])
+                    #print('flow date is ')
+                    #print(flow_dates[flow_counter])
                     if conc_dates[concentration_counter] == flow_dates[flow_counter]:
                         flow_final.append(flow[flow_counter])
                         concentration_final.append(concentration[concentration_counter])
@@ -309,10 +313,11 @@ def add_new_data(sites, start,end,concentration,source,network):
                     #missing flow value
                     elif conc_dates[concentration_counter] < flow_dates[flow_counter]:
                         concentration_counter = concentration_counter + 1
+                        #print('concentration date incrementing')
             
                     #missing concentration value
                     elif flow_dates[flow_counter] < conc_dates[concentration_counter]:
-                        concentration_counter = concentration_counter + 1
+                        flow_counter = flow_counter + 1
             
                 
                 
@@ -706,12 +711,9 @@ def update_segmentation(event_id):
         
         segmentation_updated = []
         for i in range(0,len(segments)):
-            print('this many segments' +str(len(segments)))
-            #metrics = retrieve_metrics(event_id,i)
             start_index = segments[i]['start']
             end_index = segments[i]['end']
-            print(start_index)
-            print(end_index)
+            
             
             seg = create_segment(flow[start_index:end_index],concentration[start_index:end_index],event_time[start_index:end_index],start_index,end_index)
             
@@ -740,7 +742,7 @@ def update_segmentation(event_id):
     except Exception as e:
         # Careful not to hide error. At the very least log it to the console
         print(e)
-        print('in exception')
+        #print('in exception')
         return False 
           
 
@@ -749,9 +751,6 @@ def update_segmentation(event_id):
     
 def create_segment(event_flow,event_concentration,event_time,start_index,end_index):
     
-    print(len(event_time))
-    print(len(event_flow))
-    print(len(event_concentration))
     duration = event_time[-1] - event_time[0]
     startTime = str(event_time[0])
     endTime = str(event_time[-1])
@@ -1193,7 +1192,7 @@ def upload_trajectory(hydrograph_file):
             header.append(value.strip())
         break
         
-    print(header)
+    #print(header)
     if header[0]!= 'index' or header[1]!='time' or ('flow' not in header[2]) or header[3]!='concentration':
         print('Error: Incorrect file format')
         return False
@@ -1239,8 +1238,8 @@ def upload_trajectory(hydrograph_file):
                 continue
                 print('value error')
 
-        print('data formatted')
-        print(len(trajectory_points))
+        #print('data formatted')
+        #print(len(trajectory_points))
         if len(trajectory_points) > 0:
             print('length of uploaded trajectory: '+str(len(trajectory_points)))
             #Create new event record
@@ -1360,7 +1359,7 @@ def download_file(event_id):
             
             fname2 = 'tethysdev/tethysapp-heda/tethysapp/heda/public/files/'+str(int(event_id)-30)+'_file_temp.csv'
             if os.path.exists(fname2):
-                print('removing')
+                #print('removing')
                 os.remove(fname2)
          
             

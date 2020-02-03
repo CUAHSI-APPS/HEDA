@@ -113,8 +113,6 @@ def home(request):
     HEDA_button = Button(
         display_text='Run HEDA tool',
         name='HEDA-button',
-        #return redirect(reverse('heda:add_data', kwargs={"event_id": event_id,"site_number":site_number,"start_date":start_date,"end_date":end_date,"concentration_parameter":concentration_parameter,"fc":fc, "PKThreshold": PKThreshold , "ReRa": ReRa, "MINDUR":MINDUR,"BSLOPE":BSLOPE,"ESLOPE":ESLOPE,"SC":SC,"dyslp":dyslp,"segment_button_disable":str(segment_button_disable),"download_button_disable":str(download_button_disable),"select_input":select_input,"network":network,"visualize_button_disable" : str(visualize_button_disable)}))
-            
         href=reverse('heda:add_data', kwargs={"event_id": '1',"site_number":'no',"start_date":'no',"end_date":'no',"concentration_parameter":'no',"fc":'0.996', "PKThreshold": 'no' , "ReRa": '0.1', "MINDUR":'0',"BSLOPE":'0.0001',"ESLOPE":'0.001',"SC":'4',"dyslp":'0.001',"segment_button_disable":str(True),"download_button_disable":str(True),"select_input":'CUAHSI',"network":'NWISUV',"visualize_button_disable" : str(True)}),
         attributes={
             'data-toggle': 'tooltip',
@@ -233,7 +231,7 @@ def add_data(request,event_id=1,site_number = 'no',start_date = 'no',end_date='n
         if not has_errors:
             # Process file here
             success = upload_trajectory(hydrograph_file[0])
-            print('trajectory function returned with event id as : '+str(success))
+            #print('trajectory function returned with event id as : '+str(success))
             # Provide feedback to user
             if success:
                 messages.info(request, 'Successfully uploaded trajectory.')
@@ -374,7 +372,7 @@ def add_data(request,event_id=1,site_number = 'no',start_date = 'no',end_date='n
             if not event_id:
                 messages.error(request, "Unable to retrieve data please check parameters or try again after a few minutes.")
                 segment_button_disable = True
-                print('event not added')
+                #print('event not added')
                 
                 
             else:
@@ -409,13 +407,13 @@ def add_data(request,event_id=1,site_number = 'no',start_date = 'no',end_date='n
         # Get Values
         has_errors = False
         select_input = request.POST.get('select-input',None)
-        print('download clicked')
+        
         
         
         if not has_errors:
             # Process file here
             success = download_file(event_id)
-            print('download file returned : '+str(success))
+            #print('download file returned : '+str(success))
             # Provide feedback to user
             if success:
                 
@@ -790,7 +788,7 @@ def visualize_events(request,event_id,sub_event):
 
         if not has_errors:
             # create and write file here
-            print('no errors')
+            #print('no errors')
             
             success = 1
             # Provide feedback to user
