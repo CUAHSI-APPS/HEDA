@@ -537,14 +537,14 @@ def cqt_cq_event_plot(event_id, sub_event,height='800px', width='100%'):
     # Initialize figure with subplots
     fig = make_subplots(
         rows=2, cols=2,
+        #Scott, column width and row with as you pointed out are ratio, we have two columns and two rows. 
         column_widths=[0.6, 0.4],
         row_heights=[0.4, 0.6],
+        #Scott - horizontal spacing, is used to remove the gap between C-Q and 3-D plot. 
         horizontal_spacing = 0.05,
         specs=[[{"type": "xy","secondary_y": True,"colspan":2}, None],
             [{"type": "scatter"}, {"type": "scatter3d"}]])
             
-        #specs=[[{"type": "xy","secondary_y": True,"colspan":2},{"type": "scatter", "rowspan": 2}],
-        #    [            None                    , {"type": "scatter3d"}]])
     
     
                 
@@ -620,7 +620,7 @@ def cqt_cq_event_plot(event_id, sub_event,height='800px', width='100%'):
         ),
         row=2, col=2
     )
-
+    #Scott - height 800 and width 950. I am using these to adjust height and width. I think if you want height to be greater or small, i would also change the height in line "PlotlyView(fig, height='800px', width='100%')" to match.  
     fig['layout'].update(height=800, width=950)
                                                   
     # Set theme, margin, and annotation in layout
@@ -643,7 +643,10 @@ def cqt_cq_event_plot(event_id, sub_event,height='800px', width='100%'):
                     yaxis_title='Discharge',
                     zaxis_title='Concentration'),
         #showlegend=False,
+        #Scott - I moved the legend to top because it was messing with space utilization of figure. 
+        #orientation "h" makes it a horizontal legend
         legend_orientation="h",
+        #location coordinates of legend
         legend=dict(x=-.1, y=1.1),
         
     )
